@@ -1289,7 +1289,20 @@ function teacherPayload(){const sc=score(),m=metrics();return {
   counts:{problems:state.problemCards.length,evidence:state.problemCards.filter(evidenceComplete).length,decisions:state.problemCards.filter(decisionComplete).length,cleanOps:state.cleanOps,transformOps:state.transformOps,validationRuns:state.validationRuns},
   explored:[...state.explored],problemCards:state.problemCards,pipeline:state.pipeline,validation:{runs:state.validationRuns,note:state.validationNote},reflection:state.reflections,updatedAt:new Date().toISOString()
 }}
-async function apiPost(body){const url=getApiUrl();if(!url)throw new Error("ยังไม่ได้ตั้งค่า Google Apps Script Web App URL");await fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)});return {ok:true,opaque:true}}
+async function apiPost(body){
+  const url=getApiUrl();
+  if(!url) throw new Error("ยังไม่ได้ตั้งค่า Google Apps Script Web App URL");
+  let iframe=document.getElementById("progressSyncFrame");
+  if(!iframe){
+    iframe=document.createElement("iframe"); iframe.id="progressSyncFrame"; iframe.name="progressSyncFrame"; iframe.style.display="none"; document.body.appendChild(iframe);
+  }
+  const form=document.createElement("form");
+  form.method="POST"; form.action=url; form.target="progressSyncFrame"; form.style.display="none";
+  const input=document.createElement("input"); input.type="hidden"; input.name="payload"; input.value=JSON.stringify(body); form.appendChild(input);
+  document.body.appendChild(form); form.submit();
+  setTimeout(()=>form.remove(),1500);
+  return {ok:true,submitted:true};
+}
 function apiJsonp(params){return new Promise((resolve,reject)=>{const url=getApiUrl();if(!url){reject(new Error("ยังไม่ได้ตั้งค่า Google Apps Script Web App URL"));return;}const cb="dpJsonp_"+Date.now()+"_"+Math.random().toString(36).slice(2);const q=new URLSearchParams({...params,callback:cb});const script=document.createElement("script");const timer=setTimeout(()=>{cleanup();reject(new Error("Backend timeout"))},15000);function cleanup(){clearTimeout(timer);delete window[cb];script.remove()}window[cb]=(obj)=>{cleanup();if(obj&&obj.ok===false)reject(new Error(obj.error||"Backend error"));else resolve(obj)};script.onerror=()=>{cleanup();reject(new Error("ไม่สามารถโหลดข้อมูลจาก Backend"))};script.src=url+"?"+q.toString();document.body.appendChild(script)})}
 async function remoteSave(silent=true){
   if(!learnerKey()){if(!silent)openStudentProfile();return false}
