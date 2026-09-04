@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Data Preparation Simulation Lab v3 — Evidence-Based</title>
+<style>
+:root{
+  --bg:#f5f7fb; --panel:#ffffff; --ink:#172033; --muted:#667085; --line:#e5e9f2;
+  --primary:#3563e9; --primary2:#eef3ff; --good:#0f9d77; --warn:#d97706; --bad:#d92d20;
+  --shadow:0 8px 24px rgba(23,32,51,.08); --radius:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:var(--ink);background:var(--bg)}
+button,select,input,textarea{font:inherit}
+button{cursor:pointer}
+.topbar{
+  position:sticky;top:0;z-index:30;background:#101828;color:#fff;display:flex;align-items:center;
+  gap:18px;padding:12px 20px;box-shadow:0 2px 12px rgba(0,0,0,.14)
+}
+.brand{font-weight:800;letter-spacing:.2px;white-space:nowrap}
+.brand small{display:block;font-size:11px;font-weight:500;color:#cbd5e1}
+.topstats{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pill{background:#1d2939;border:1px solid #344054;border-radius:999px;padding:7px 11px;font-size:13px}
+.pill strong{color:#fff}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 12px;border-radius:10px;font-weight:650}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(23,32,51,.08)}
+.btn.primary{background:var(--primary);color:white;border-color:var(--primary)}
+.btn.soft{background:var(--primary2);color:#2447ae;border-color:#d9e3ff}
+.btn.good{background:#ecfdf3;color:#067647;border-color:#abefc6}
+.btn.warn{background:#fffaeb;color:#b54708;border-color:#fedf89}
+.btn.danger{background:#fef3f2;color:#b42318;border-color:#fecdca}
+.navtabs{
+  display:flex;gap:6px;padding:10px 18px;background:white;border-bottom:1px solid var(--line);
+  position:sticky;top:65px;z-index:20;overflow:auto
+}
+.navtab{border:0;background:transparent;padding:9px 16px;border-radius:10px;font-weight:750;color:#667085}
+.navtab.active{background:var(--primary2);color:var(--primary)}
+.dashboard{padding:16px;display:grid;grid-template-columns:270px minmax(480px,1fr) 280px;gap:14px;align-items:start}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.panel-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;justify-content:space-between}
+.panel-head h3{margin:0;font-size:15px}
+.panel-body{padding:14px}
+.sidebar,.pipeline{position:sticky;top:118px;max-height:calc(100vh - 136px);overflow:auto}
+.tool-group{border-bottom:1px solid var(--line);padding-bottom:13px;margin-bottom:13px}
+.tool-group:last-child{border:0}
+.tool-group h4{margin:0 0 9px;font-size:13px;color:#344054}
+.stack{display:grid;gap:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{font-size:12px;color:#475467;font-weight:650}
+select,input,textarea{
+  width:100%;border:1px solid #d0d5dd;border-radius:9px;padding:8px 9px;background:white;color:#101828
+}
+textarea{min-height:88px;resize:vertical}
+.helper{font-size:11px;color:var(--muted);line-height:1.45}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(105px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px}
+.kpi .label{font-size:11px;color:var(--muted)}
+.kpi .value{font-size:23px;font-weight:850;margin-top:2px}
+.kpi .delta{font-size:10px;margin-top:3px}
+.goodtext{color:var(--good)} .badtext{color:var(--bad)} .warntext{color:var(--warn)}
+.workspace{min-width:0}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:12px}
+.card-head{padding:13px 15px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;justify-content:space-between}
+.card-head h2,.card-head h3{margin:0;font-size:15px}
+.card-body{padding:14px}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;max-height:430px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{border-bottom:1px solid #edf0f5;border-right:1px solid #f1f3f6;padding:7px 8px;text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:#f8fafc;z-index:2;font-weight:800}
+th.selected-col,td.selected-col{background:#eef4ff}
+td.issue{background:#fff4ed;color:#9c2a10;font-weight:700}
+td.missing{background:#fef3f2;color:#b42318;font-style:italic}
+tr.duplicate td{box-shadow:inset 0 1px #f79009,inset 0 -1px #f79009}
+.pager{display:flex;justify-content:space-between;align-items:center;margin-top:9px;font-size:12px;color:#667085}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chart-card{border:1px solid var(--line);border-radius:12px;padding:10px;min-height:245px}
+.chart-title{font-size:12px;font-weight:800;margin-bottom:6px}
+canvas{width:100%;height:200px;display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.statbox{padding:9px;border-radius:10px;background:#f8fafc;border:1px solid #eef2f6}
+.statbox b{display:block;font-size:16px}
+.statbox span{font-size:10px;color:var(--muted)}
+.step{display:flex;gap:9px;align-items:flex-start;padding:9px 4px;border-bottom:1px dashed #e4e7ec}
+.step:last-child{border:0}
+.step-num{flex:0 0 24px;height:24px;border-radius:50%;background:var(--primary2);color:var(--primary);font-weight:850;display:grid;place-items:center;font-size:11px}
+.step small{display:block;color:var(--muted);margin-top:2px}
+.feedback{
+  position:sticky;bottom:0;z-index:18;background:#101828;color:white;border-radius:14px 14px 0 0;padding:12px 15px;
+  display:flex;gap:12px;align-items:flex-start;box-shadow:0 -6px 18px rgba(16,24,40,.12)
+}
+.feedback .icon{font-size:23px}
+.feedback p{margin:2px 0 0;color:#e4e7ec;font-size:12px;line-height:1.5}
+.feedback .assist{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.feedback .assist button{background:#1d2939;color:#fff;border:1px solid #475467;border-radius:8px;padding:6px 8px;font-size:11px}
+.progress{height:9px;background:#eaecf0;border-radius:999px;overflow:hidden}
+.progress > i{display:block;height:100%;background:var(--primary);width:0}
+.mission{padding:9px;border:1px solid var(--line);border-radius:11px;margin-bottom:7px}
+.mission .row{display:flex;justify-content:space-between;gap:8px;font-size:11px}
+.mission.done{border-color:#abefc6;background:#f6fef9}
+.badge{display:inline-flex;padding:3px 7px;border-radius:999px;background:#f2f4f7;font-size:10px;font-weight:750}
+.badge.good{background:#ecfdf3;color:#067647}.badge.warn{background:#fffaeb;color:#b54708}.badge.bad{background:#fef3f2;color:#b42318}
+.quality-ring{width:106px;height:106px;border-radius:50%;display:grid;place-items:center;margin:auto;background:conic-gradient(var(--primary) 0%,#eaecf0 0)}
+.quality-ring div{width:76px;height:76px;background:white;border-radius:50%;display:grid;place-items:center;text-align:center;font-weight:900;font-size:20px}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.metric-table td:first-child{font-weight:750}
+.metric-table td{text-align:right}.metric-table td:first-child{text-align:left}
+.score-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.score-card{padding:12px;border-radius:12px;border:1px solid var(--line)}
+.score-card b{font-size:24px}
+.checks{display:grid;gap:6px}
+.check{display:flex;align-items:center;gap:8px;font-size:12px}
+.check input{width:auto}
+.note{padding:9px 11px;border-left:3px solid var(--primary);background:#f7f9ff;border-radius:7px;font-size:12px;line-height:1.5}
+.hidden{display:none!important}
+.modal-backdrop{position:fixed;inset:0;background:rgba(16,24,40,.55);display:grid;place-items:center;padding:20px;z-index:100}
+.modal{background:#fff;border-radius:16px;max-width:900px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 24px 70px rgba(0,0,0,.25)}
+.modal-head,.modal-foot{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.modal-foot{border-top:1px solid var(--line);border-bottom:0;justify-content:flex-end}
+.modal-body{padding:16px}
+.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.codebox{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#0b1220;color:#d8e3ff;border-radius:11px;padding:12px;white-space:pre-wrap;font-size:11px;max-height:250px;overflow:auto}
+.toast{position:fixed;right:18px;bottom:82px;background:#101828;color:white;padding:10px 14px;border-radius:10px;z-index:120;box-shadow:var(--shadow);font-size:12px}
+.corr{display:grid;gap:2px;font-size:9px;overflow:auto}
+.corr-cell{padding:7px 4px;text-align:center;border-radius:4px;min-width:52px}
+.small-actions{display:flex;gap:6px;flex-wrap:wrap}
+.section-title{font-size:18px;margin:0 0 4px}.section-sub{font-size:12px;color:var(--muted);margin:0}
+@media(max-width:1150px){
+  .dashboard{grid-template-columns:235px minmax(480px,1fr)}
+  .pipeline{position:static;grid-column:1/-1;max-height:none}
+  .pipeline .panel-body{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+}
+@media(max-width:820px){
+  .dashboard{grid-template-columns:1fr;padding:10px}
+  .sidebar,.pipeline{position:static;max-height:none}
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .chart-grid,.compare,.preview-grid{grid-template-columns:1fr}
+  .navtabs{top:62px}
+  .feedback{position:static;border-radius:14px;margin-top:10px}
+  .pipeline .panel-body{display:block}
+}
+
+.flow-banner{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.flow-chip{padding:7px 10px;border-radius:999px;background:#eef3ff;color:#2447ae;font-size:11px;font-weight:800;border:1px solid #d9e3ff}.flow-chip.done{background:#ecfdf3;color:#067647;border-color:#abefc6}.flow-chip.current{background:#101828;color:#fff;border-color:#101828}.lock-card{padding:18px;border:1px dashed #f79009;background:#fffaeb;border-radius:14px;text-align:center}.lock-card h3{margin:0 0 6px}.problem-card{border:1px solid var(--line);border-radius:13px;padding:12px;margin-bottom:9px;background:#fff}.problem-card.complete{border-color:#abefc6;background:#f6fef9}.problem-head{display:flex;gap:8px;align-items:center;justify-content:space-between}.problem-meta{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.evidence-box{background:#f8fafc;border-left:3px solid #7f56d9;border-radius:8px;padding:9px;font-size:12px;line-height:1.45}.decision-box{background:#eff8ff;border-left:3px solid #2e90fa;border-radius:8px;padding:9px;font-size:12px;line-height:1.45;margin-top:7px}.radio-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.radio-pill{border:1px solid var(--line);padding:8px;border-radius:10px;font-size:11px;text-align:center;background:#fff}.radio-pill input{width:auto}.stage-help{background:linear-gradient(135deg,#eef4ff,#f9f5ff);border:1px solid #d9e3ff;border-radius:14px;padding:12px;margin-bottom:12px}.evidence-example{background:#fef6ee;border:1px solid #f9dbaf;border-radius:12px;padding:10px;font-size:12px}.warning-large{background:#fff4ed;border:1px solid #fed7aa;color:#9c2a10;border-radius:12px;padding:12px;font-weight:700}.delta-up{color:#067647}.delta-down{color:#b42318}.navtab[disabled]{opacity:.42;cursor:not-allowed}.navtab.locked::after{content:" 🔒"}.clean-sections details{border:1px solid var(--line);border-radius:12px;margin-bottom:9px;background:#fff}.clean-sections summary{padding:10px 12px;font-weight:800;cursor:pointer}.clean-sections details>div{padding:0 12px 12px}.decision-progress{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.mini-metric{border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}.mini-metric b{font-size:18px;display:block}.validate-grid{overflow:auto}.validate-grid table td,.validate-grid table th{white-space:normal}.reason-required{background:#fffaeb;border:1px solid #fedf89;border-radius:10px;padding:10px;margin-top:12px}.reason-required textarea{min-height:68px}
+
+/* ================= v3 learner progress + teacher dashboard ================= */
+.student-pill{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sync-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#f79009;margin-right:5px}.sync-dot.ok{background:#12b76a}.sync-dot.err{background:#f04438}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.profile-grid .full{grid-column:1/-1}
+.teacher-grid{display:grid;grid-template-columns:minmax(360px,1fr) minmax(420px,1.2fr);gap:14px}.teacher-list{max-height:520px;overflow:auto}.teacher-detail{max-height:600px;overflow:auto}
+.teacher-row{cursor:pointer}.teacher-row:hover{background:#f9fafb}.answer-card{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;background:#fff}.answer-card h4{margin:0 0 5px}.status-good{color:#067647;font-weight:800}.status-warn{color:#b54708;font-weight:800}.connection-box{background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}.tiny{font-size:10px;color:var(--muted)}
+@media(max-width:1000px){.teacher-grid{grid-template-columns:1fr}.profile-grid{grid-template-columns:1fr}.profile-grid .full{grid-column:auto}}
+/* ================= end v3 styles ================= */
+
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">🧪 Data Preparation Simulation Lab v2<small>Explore → Detect → Evidence → Decide → Clean/Transform → Validate → Reflect</small></div>
+  <div class="topstats">
+    <span class="pill">Mission <strong id="topMission">0/7</strong></span>
+    <span class="pill">Score <strong id="topScore">0</strong>/100</span>
+    <span class="pill student-pill" id="studentBadge">👤 ยังไม่ระบุผู้เรียน</span>
+    <span class="pill" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Local</span></span>
+    <button class="btn" id="studentProfileBtn">👤 ผู้เรียน</button>
+    <button class="btn good" id="saveProgressBtn">💾 บันทึก</button>
+    <button class="btn soft" id="teacherDashboardBtn">👩‍🏫 ครู</button>
+    <button class="btn warn" id="resetBtn">↻ Reset</button>
+  </div>
+</header>
+
+<nav class="navtabs" id="navtabs">
+  <button class="navtab active" data-tab="explore">1. 🔍 Explore</button>
+  <button class="navtab" data-tab="detect">2. ⚠️ Detect</button>
+  <button class="navtab" data-tab="evidence">3. 📌 Evidence</button>
+  <button class="navtab" data-tab="decide">4. 🧠 Decide</button>
+  <button class="navtab" data-tab="cleantransform">5. 🧹 Clean / Transform</button>
+  <button class="navtab" data-tab="validate">6. ✅ Validate</button>
+  <button class="navtab" data-tab="reflect">7. 💭 Reflect</button>
+</nav>
+
+<main class="dashboard">
+  <aside class="panel sidebar">
+    <div class="panel-head"><h3>🧰 Data Preparation Tools</h3></div>
+    <div class="panel-body" id="toolPanel"></div>
+  </aside>
+
+  <section class="workspace">
+    <div class="kpis" id="kpis"></div>
+    <div id="workspaceContent"></div>
+
+    <div class="feedback">
+      <div class="icon">💡</div>
+      <div>
+        <strong id="feedbackTitle">Learning Feedback</strong>
+        <p id="feedbackText">เริ่มจากสำรวจ Dataset ก่อนแก้ไขข้อมูล เพื่อแยก “สิ่งผิดปกติ” ออกจาก “ข้อมูลที่แค่ดูแปลก”</p>
+      </div>
+      <div class="assist">
+        <button data-help="hint">Hint</button>
+        <button data-help="why">Why?</button>
+        <button data-help="formula">Show Formula</button>
+        <button data-help="explain">Explain Result</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel pipeline">
+    <div class="panel-head">
+      <h3>🧭 Preparation Pipeline</h3>
+      <div class="small-actions">
+        <button class="btn" id="undoBtn" title="Undo">↶</button>
+        <button class="btn" id="redoBtn" title="Redo">↷</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div>
+        <div id="pipelineList"></div>
+      </div>
+      <div>
+        <h4 style="margin:6px 0 8px">🎯 Challenge Mode</h4>
+        <div id="missions"></div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+"use strict";
+
+/* -------------------------- deterministic dataset ------------------------- */
+function rng(seed=20260829){
+  let a=seed>>>0;
+  return ()=>{ a+=0x6D2B79F5; let t=a; t=Math.imul(t^t>>>15,t|1); t^=t+Math.imul(t^t>>>7,t|61); return ((t^t>>>14)>>>0)/4294967296; };
+}
+const R = rng();
+const pick = a => a[Math.floor(R()*a.length)];
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+function normal(mean, sd){
+  let u=0,v=0; while(!u)u=R(); while(!v)v=R();
+  return mean + sd*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+const jobs=["Teacher","Engineer","Nurse","Sales","Technician","Accountant","Designer","Officer"];
+const payHist=["Good","Average","Late"];
+function generateDataset(){
+  const arr=[];
+  for(let i=1;i<=520;i++){
+    const age=Math.round(clamp(normal(38,11),18,72));
+    const income=Math.round(clamp(normal(48000,17000),12000,120000));
+    const debt=Math.round(clamp(income*(0.12+R()*.65),1000,120000));
+    const score=Math.round(clamp(normal(665,70),360,840));
+    const loan=Math.round(clamp(normal(220000,120000),30000,650000)/1000)*1000;
+    const emp=Math.max(0,Math.round(age-20-R()*12));
+    const risk=(debt/income)*.45 + (700-score)/500 + (pick(payHist)==="Late"?.25:0);
+    arr.push({
+      Customer_ID:"C"+String(i).padStart(4,"0"),
+      Age:age,
+      Gender:pick(["Male","Female"]),
+      Occupation:pick(jobs),
+      Income:income,
+      Debt:debt,
+      Credit_Score:score,
+      Loan_Amount:loan,
+      Loan_Term:pick([12,24,36,48,60]),
+      Payment_History:pick(payHist),
+      Employment_Years:emp,
+      Default:risk>.78?"Yes":"No"
+    });
+  }
+  // Missing values: intentionally >1% of all cells so learners must address them.
+  for(let i=0;i<arr.length;i++){
+    if(i%17===0) arr[i].Income=null;
+    if(i%23===0) arr[i].Occupation="";
+    if(i%29===0) arr[i].Credit_Score=null;
+    if(i%41===0) arr[i].Payment_History=null;
+    if(i%53===0) arr[i].Employment_Years=null;
+  }
+  [11,37,62,95,140,201,275,333,410,488].forEach(i=>arr[i].Income=null);
+  [8,52,179,261,390].forEach(i=>arr[i].Occupation="");
+  [24,76,315,477].forEach(i=>arr[i].Credit_Score=null);
+  [110,311,450].forEach(i=>arr[i].Payment_History=null);
+  // invalid
+  arr[18].Age=-4; arr[91].Age=132; arr[304].Age="thirty";
+  arr[66].Income=-25000; arr[271].Debt=-4000; arr[408].Credit_Score=920;
+  arr[199].Loan_Term=17; arr[501].Employment_Years=-3;
+  // outliers
+  arr[41].Income=9999999; arr[156].Income=1250000; arr[220].Debt=2800000;
+  arr[366].Loan_Amount=4200000; arr[430].Employment_Years=79;
+  // inconsistent + typos + incorrect numeric strings
+  arr[5].Occupation="teacher"; arr[29].Occupation="TEACHER"; arr[49].Occupation="Teacher ";
+  arr[112].Occupation="Enginer"; arr[301].Occupation="engineer";
+  arr[86].Gender="female"; arr[167].Gender="MALE ";
+  arr[206].Payment_History="late"; arr[389].Default="YES";
+  arr[143].Income="45,000"; arr[318].Credit_Score="710 ";
+  // duplicates
+  [44,127,233,402,499,15,300,351].forEach(i=>arr.push(JSON.parse(JSON.stringify(arr[i]))));
+  return arr;
+}
+const originalData=generateDataset();
+const schemaOrder=["Customer_ID","Age","Gender","Occupation","Income","Debt","Credit_Score","Loan_Amount","Loan_Term","Payment_History","Employment_Years","Default"];
+
+/* ------------------------------ app state -------------------------------- */
+const state={
+  tab:"explore",
+  data:JSON.parse(JSON.stringify(originalData)),
+  selectedColumn:"Income",
+  view:"preview",
+  page:1,
+  pageSize:12,
+  pipeline:[{label:"Load Dataset",type:"system",time:new Date().toLocaleTimeString("th-TH")}],
+  undo:[], redo:[],
+  detected:new Set(),
+  explored:new Set(),
+  transformOps:0,
+  totalOps:0,
+  feedback:{title:"Learning Feedback",text:"เริ่มจากสำรวจ Dataset ก่อนแก้ไขข้อมูล เพื่อแยก “สิ่งผิดปกติ” ออกจาก “ข้อมูลที่แค่ดูแปลก”"},
+  reflections:["","","","","","",""]
+};
+const problemTypes=["Missing Values","Duplicate Records","Invalid Values","Outliers","Inconsistent Categories","Incorrect Data Types","Typographical Errors"];
+
+function deepData(d){return JSON.parse(JSON.stringify(d))}
+function snapshot(){
+  return {
+    data:deepData(state.data), pipeline:deepData(state.pipeline), transformOps:state.transformOps,
+    totalOps:state.totalOps, selectedColumn:state.selectedColumn
+  };
+}
+function restore(s){
+  state.data=deepData(s.data); state.pipeline=deepData(s.pipeline);
+  state.transformOps=s.transformOps; state.totalOps=s.totalOps; state.selectedColumn=s.selectedColumn;
+}
+
+/* ------------------------------ data utils -------------------------------- */
+const isMissing=v=>v===null||v===undefined||v==="";
+function numeric(v){
+  if(isMissing(v)) return null;
+  if(typeof v==="number") return Number.isFinite(v)?v:null;
+  const s=String(v).trim();
+  if(!/^-?\d+(\.\d+)?$/.test(s)) return null;
+  const n=Number(s); return Number.isFinite(n)?n:null;
+}
+function fmt(v){
+  if(isMissing(v)) return "∅ Missing";
+  if(typeof v==="number") return Math.abs(v)>=1000?v.toLocaleString():String(v);
+  return String(v);
+}
+function columns(){ return state.data.length?Object.keys(state.data[0]):schemaOrder; }
+function missingCount(data=state.data){
+  let c=0; data.forEach(r=>Object.values(r).forEach(v=>{if(isMissing(v))c++})); return c;
+}
+function duplicateIndexes(data=state.data){
+  const seen=new Map(), dup=new Set();
+  data.forEach((r,i)=>{
+    const k=JSON.stringify(r);
+    if(seen.has(k)){dup.add(seen.get(k));dup.add(i)} else seen.set(k,i);
+  }); return dup;
+}
+function duplicateExtraCount(data=state.data){
+  const m=new Map(); data.forEach(r=>{const k=JSON.stringify(r);m.set(k,(m.get(k)||0)+1)});
+  let c=0; m.forEach(n=>{if(n>1)c+=n-1}); return c;
+}
+function invalidCell(row,col){
+  const v=row[col]; if(isMissing(v))return false;
+  const n=numeric(v);
+  if(col==="Age") return n===null||n<18||n>100;
+  if(col==="Income"||col==="Debt"||col==="Loan_Amount") return n===null||n<0;
+  if(col==="Credit_Score") return n===null||n<300||n>850;
+  if(col==="Loan_Term") return n===null||![12,24,36,48,60].includes(n);
+  if(col==="Employment_Years") return n===null||n<0||n>60;
+  return false;
+}
+function invalidCount(data=state.data){
+  let c=0; const numCols=["Age","Income","Debt","Credit_Score","Loan_Amount","Loan_Term","Employment_Years"];
+  data.forEach(r=>numCols.forEach(col=>{if(col in r && invalidCell(r,col))c++})); return c;
+}
+function normalizeCategory(col,v){
+  if(isMissing(v)) return v;
+  let s=String(v).trim();
+  if(col==="Gender"){
+    s=s.toLowerCase(); return s==="male"?"Male":s==="female"?"Female":s;
+  }
+  if(col==="Default"){
+    s=s.toLowerCase(); return s==="yes"?"Yes":s==="no"?"No":s;
+  }
+  if(col==="Payment_History"){
+    s=s.toLowerCase(); return s.charAt(0).toUpperCase()+s.slice(1);
+  }
+  if(col==="Occupation"){
+    const low=s.toLowerCase();
+    if(low==="enginer") return "Engineer";
+    return low.charAt(0).toUpperCase()+low.slice(1);
+  }
+  return s;
+}
+function inconsistentCount(data=state.data){
+  const cols=["Gender","Occupation","Payment_History","Default"]; let c=0;
+  data.forEach(r=>cols.forEach(col=>{if(col in r && !isMissing(r[col]) && String(r[col])!==String(normalizeCategory(col,r[col])))c++}));
+  return c;
+}
+function valuesFor(col,data=state.data){
+  return data.map(r=>numeric(r[col])).filter(v=>v!==null && Number.isFinite(v)).sort((a,b)=>a-b);
+}
+function quantile(arr,q){
+  if(!arr.length)return null; const pos=(arr.length-1)*q, base=Math.floor(pos), rest=pos-base;
+  return arr[base+1]!==undefined?arr[base]+rest*(arr[base+1]-arr[base]):arr[base];
+}
+function mean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null}
+function median(a){return quantile([...a].sort((x,y)=>x-y),.5)}
+function modeRaw(a){
+  const m=new Map(); a.forEach(v=>{if(!isMissing(v))m.set(String(v),(m.get(String(v))||0)+1)});
+  let best=null,n=0;m.forEach((v,k)=>{if(v>n){n=v;best=k}});return best;
+}
+function sd(a){if(a.length<2)return 0;const m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1))}
+function outlierInfo(col,data=state.data,method="iqr"){
+  const vals=valuesFor(col,data); const flagged=[];
+  if(vals.length<4)return {lower:null,upper:null,flagged};
+  let lower,upper;
+  if(method==="z"){
+    const m=mean(vals), s=sd(vals); lower=m-3*s; upper=m+3*s;
+  } else {
+    const q1=quantile(vals,.25),q3=quantile(vals,.75),iqr=q3-q1; lower=q1-1.5*iqr;upper=q3+1.5*iqr;
+  }
+  data.forEach((r,i)=>{const n=numeric(r[col]);if(n!==null&&(n<lower||n>upper))flagged.push(i)});
+  return {lower,upper,flagged};
+}
+function potentialOutliers(data=state.data){
+  const cols=["Age","Income","Debt","Credit_Score","Loan_Amount","Employment_Years"];
+  let s=new Set(); cols.forEach(c=>outlierInfo(c,data).flagged.forEach(i=>s.add(c+"@"+i))); return s.size;
+}
+function metrics(data=state.data){
+  const rows=data.length, cols=data.length?Object.keys(data[0]).length:0, cells=Math.max(1,rows*cols);
+  const missing=missingCount(data), dup=duplicateExtraCount(data), invalid=invalidCount(data), incons=inconsistentCount(data), out=potentialOutliers(data);
+  // Teaching-oriented quality bands: small but meaningful defects should visibly affect the score.
+  // A dimension reaches 0 only when its issue rate becomes severe; this is not an industry standard formula.
+  const completeness=100*(1-Math.min(1,missing/Math.max(1,cells*.05)));
+  const validity=100*(1-Math.min(1,invalid/Math.max(1,rows*.05)));
+  const consistency=100*(1-Math.min(1,incons/Math.max(1,rows*.05)));
+  const uniqueness=100*(1-Math.min(1,dup/Math.max(1,rows*.03)));
+  const preservation=100*Math.min(1,rows/originalData.length);
+  const quality=.22*completeness+.22*validity+.18*consistency+.18*uniqueness+.20*preservation;
+  return {rows,cols,missing,dup,invalid,incons,out,
+    completeness,validity,consistency,uniqueness,preservation,quality};
+}
+const initialMetrics=metrics(originalData);
+
+function statsFor(col){
+  const raw=state.data.map(r=>r[col]), nums=valuesFor(col);
+  if(nums.length>=Math.max(3,raw.filter(v=>!isMissing(v)).length*.6)){
+    return {kind:"numeric",count:nums.length,missing:raw.filter(isMissing).length,unique:new Set(raw.filter(v=>!isMissing(v)).map(String)).size,
+      min:nums.length?Math.min(...nums):null,max:nums.length?Math.max(...nums):null,mean:mean(nums),median:median(nums),mode:modeRaw(raw),sd:sd(nums)};
+  }
+  return {kind:"categorical",count:raw.filter(v=>!isMissing(v)).length,missing:raw.filter(isMissing).length,
+    unique:new Set(raw.filter(v=>!isMissing(v)).map(String)).size,mode:modeRaw(raw)};
+}
+
+/* -------------------------------- scoring --------------------------------- */
+function hasPipeline(regex){return state.pipeline.some(s=>regex.test(s.label))}
+function score(){
+  const m=metrics();
+  const detect=Math.min(20,state.detected.size*4);
+  let cleanse=0;
+  if(m.missing <= initialMetrics.missing*.2) cleanse+=6;
+  if(m.dup===0) cleanse+=5;
+  if(m.invalid <= 1) cleanse+=5;
+  if(m.incons <= 1) cleanse+=4;
+  if(m.out <= initialMetrics.out*.4) cleanse+=5;
+  const trans=Math.min(20,state.transformOps*5);
+  const preserve=state.totalOps>0?15*Math.min(1,m.preservation/95):0;
+  const qImprove=clamp((m.quality-initialMetrics.quality)/Math.max(1,95-initialMetrics.quality),0,1)*10;
+  const efficiency=state.totalOps>0?Math.max(2,10-Math.max(0,state.totalOps-10)*.7):0;
+  return {
+    detection:detect,cleansing:cleanse,transformation:trans,preservation:preserve,
+    quality:qImprove,efficiency:efficiency,
+    total:Math.round(detect+cleanse+trans+preserve+qImprove+efficiency)
+  };
+}
+function missions(){
+  const m=metrics();
+  return [
+    {name:"Mission 1",desc:"ระบุปัญหาอย่างน้อย 5 ประเภท",done:state.detected.size>=5,progress:Math.min(100,state.detected.size/5*100)},
+    {name:"Mission 2",desc:"ลด Missing Values ให้ต่ำกว่า 1% ของ cells",done:m.missing/(m.rows*m.cols)<.01,progress:Math.max(0,100-(m.missing/(m.rows*m.cols))*1000)},
+    {name:"Mission 3",desc:"จัดการ Duplicate โดยรักษาข้อมูล",done:m.dup===0 && m.preservation>=95,progress:m.dup===0?100:Math.max(0,100-m.dup/Math.max(1,initialMetrics.dup)*100)},
+    {name:"Mission 4",desc:"จัดการ Outlier อย่างเหมาะสม",done:m.out<=Math.max(2,initialMetrics.out*.4),progress:Math.max(0,100-m.out/Math.max(1,initialMetrics.out)*100)},
+    {name:"Mission 5",desc:"ใช้ Transformation อย่างน้อย 2 วิธี",done:state.transformOps>=2,progress:Math.min(100,state.transformOps/2*100)},
+    {name:"Mission 6",desc:"Data Quality ≥ 90% และ Preservation ≥ 85%",done:m.quality>=90&&m.preservation>=85,progress:Math.min(100,m.quality/90*100)}
+  ];
+}
+
+/* ----------------------------- UI rendering ------------------------------- */
+function setFeedback(title,text){
+  state.feedback={title,text}; document.getElementById("feedbackTitle").textContent=title; document.getElementById("feedbackText").textContent=text;
+}
+function toast(msg){
+  const el=document.createElement("div");el.className="toast";el.textContent=msg;
+  document.getElementById("toastRoot").appendChild(el);setTimeout(()=>el.remove(),2200);
+}
+function renderAll(){
+  renderTop(); renderTools(); renderKpis(); renderWorkspace(); renderPipeline(); renderMissions();
+  document.getElementById("feedbackTitle").textContent=state.feedback.title;
+  document.getElementById("feedbackText").textContent=state.feedback.text;
+  document.querySelectorAll(".navtab").forEach(b=>b.classList.toggle("active",b.dataset.tab===state.tab));
+  document.getElementById("undoBtn").disabled=!state.undo.length;
+  document.getElementById("redoBtn").disabled=!state.redo.length;
+}
+function renderTop(){
+  const ms=missions(), sc=score();
+  document.getElementById("topMission").textContent=`${ms.filter(x=>x.done).length}/6`;
+  document.getElementById("topScore").textContent=sc.total;
+}
+function renderKpis(){
+  const m=metrics();
+  const arr=[
+    ["Rows",m.rows,`${m.rows-originalData.length>=0?"+":""}${m.rows-originalData.length} vs original`],
+    ["Columns",m.cols,`${m.cols-initialMetrics.cols>=0?"+":""}${m.cols-initialMetrics.cols} vs original`],
+    ["Missing",m.missing,`${initialMetrics.missing-m.missing} resolved`],
+    ["Duplicates",m.dup,`${initialMetrics.dup-m.dup} resolved`],
+    ["Invalid",m.invalid,`${initialMetrics.invalid-m.invalid} resolved`],
+    ["Quality",m.quality.toFixed(1)+"%",`${(m.quality-initialMetrics.quality).toFixed(1)} pts`]
+  ];
+  document.getElementById("kpis").innerHTML=arr.map((x,i)=>`<div class="kpi"><div class="label">${x[0]}</div><div class="value">${x[1]}</div><div class="delta ${i>=2&&i<=4?(Number(String(x[1]).replace("%",""))===0?"goodtext":"warntext"):""}">${x[2]}</div></div>`).join("");
+}
+function options(cols,selected=state.selectedColumn){return cols.map(c=>`<option ${c===selected?"selected":""}>${c}</option>`).join("")}
+
+function renderTools(){
+  const p=document.getElementById("toolPanel"), cols=columns();
+  if(state.tab==="explore"){
+    p.innerHTML=`
+      <div class="tool-group"><h4>Dataset Inspection</h4><div class="grid2">
+        ${["preview","head","tail","info","describe","missing","duplicates","correlation"].map(v=>`<button class="btn ${state.view===v?"soft":""}" data-view="${v}">${v==="preview"?"Preview":v==="head"?"head()":v==="tail"?"tail()":v==="info"?"info()":v==="describe"?"describe()":v==="missing"?"Missing":v==="duplicates"?"Duplicates":"Correlation"}</button>`).join("")}
+      </div></div>
+      <div class="tool-group"><h4>Column Explorer</h4><div class="stack">
+        <label>Column</label><select id="columnSelect">${options(cols)}</select>
+        <div class="grid2"><button class="btn" data-chart="hist">Histogram</button><button class="btn" data-chart="box">Box Plot</button></div>
+        <button class="btn" data-chart="bar">Bar Chart / Frequency</button>
+      </div></div>
+      <div class="tool-group"><h4>Problem Detection Checklist</h4><div class="checks">
+        ${problemTypes.map(x=>`<label class="check"><input type="checkbox" data-detect="${x}" ${state.detected.has(x)?"checked":""}> ${x}</label>`).join("")}
+      </div><div class="helper">ระบุจากหลักฐานที่สำรวจพบ การติ๊กถูกนับเป็นคะแนน Problem Detection</div></div>`;
+  } else if(state.tab==="clean"){
+    const cat=cols.filter(c=>["Gender","Occupation","Payment_History","Default"].includes(c));
+    const num=cols.filter(c=>["Age","Income","Debt","Credit_Score","Loan_Amount","Loan_Term","Employment_Years"].includes(c));
+    p.innerHTML=`
+      <div class="tool-group"><h4>Missing Values</h4><div class="stack">
+        <select id="missCol">${options(cols)}</select>
+        <select id="missAction"><option value="dropRow">Drop Row</option><option value="dropCol">Drop Column</option><option value="mean">Fill Mean</option><option value="median">Fill Median</option><option value="mode">Fill Mode</option><option value="custom">Fill Custom Value</option></select>
+        <input id="missCustom" placeholder="Custom value" />
+        <button class="btn primary" id="previewMissing">Preview → Apply</button>
+      </div></div>
+      <div class="tool-group"><h4>Duplicate Records</h4><div class="stack">
+        <select id="dupAction"><option value="first">Keep First / Remove duplicate</option><option value="last">Keep Last / Remove duplicate</option><option value="both">Delete Both copies</option><option value="ignore">Ignore</option></select>
+        <button class="btn" id="previewDup">Detect & Preview</button>
+      </div></div>
+      <div class="tool-group"><h4>Invalid Values</h4><div class="stack">
+        <select id="invalidCol">${options(num)}</select>
+        <select id="invalidAction"><option value="remove">Remove Row</option><option value="missing">Convert to Missing</option><option value="replace">Replace (median)</option><option value="keep">Keep</option></select>
+        <button class="btn" id="previewInvalid">Preview → Apply</button>
+      </div></div>
+      <div class="tool-group"><h4>Inconsistent Categories</h4><div class="stack">
+        <select id="catCol">${options(cat)}</select><button class="btn" id="previewStandardize">Standardize Category</button>
+      </div></div>
+      <div class="tool-group"><h4>Outlier</h4><div class="stack">
+        <select id="outCol">${options(num,"Income")}</select>
+        <select id="outMethod"><option value="iqr">IQR</option><option value="z">Z-Score (±3σ)</option></select>
+        <select id="outAction"><option value="cap">Cap / Winsorize</option><option value="remove">Remove Row</option><option value="median">Replace Median</option><option value="keep">Keep</option></select>
+        <button class="btn" id="previewOutlier">Detect & Preview</button>
+      </div></div>`;
+  } else if(state.tab==="transform"){
+    const cats=cols.filter(c=>!["Customer_ID"].includes(c));
+    const nums=cols.filter(c=>valuesFor(c).length>state.data.length*.5);
+    p.innerHTML=`
+      <div class="tool-group"><h4>Data Type Conversion</h4><div class="stack">
+        <select id="typeCol">${options(cols)}</select><select id="typeAction"><option value="number">Convert to Number</option><option value="string">Convert to String</option></select>
+        <button class="btn" id="doType">Preview → Apply</button>
+      </div></div>
+      <div class="tool-group"><h4>Categorical Encoding</h4><div class="stack">
+        <select id="encCol">${options(cats,"Gender")}</select><select id="encAction"><option value="label">Label Encoding</option><option value="onehot">One-Hot Encoding</option></select>
+        <button class="btn" id="doEncode">Preview → Apply</button>
+      </div></div>
+      <div class="tool-group"><h4>Scaling</h4><div class="stack">
+        <select id="scaleCol">${options(nums,"Income")}</select><select id="scaleAction"><option value="norm">Normalization (0–1)</option><option value="std">Standardization (z-score)</option></select>
+        <button class="btn" id="doScale">Preview → Apply</button>
+      </div></div>
+      <div class="tool-group"><h4>Binning</h4><div class="stack">
+        <select id="binCol">${options(nums,"Age")}</select><button class="btn" id="doBin">Create _Band Column</button>
+      </div></div>
+      <div class="tool-group"><h4>Feature Engineering</h4><div class="stack">
+        <div class="grid2"><select id="featA">${options(nums,"Debt")}</select><select id="featB">${options(nums,"Income")}</select></div>
+        <input id="featName" value="Debt_to_Income" placeholder="New feature name"><button class="btn" id="doFeature">Create A / B</button>
+      </div></div>
+      <div class="tool-group"><h4>Column Operations</h4><div class="stack">
+        <select id="colOpCol">${options(cols)}</select><input id="renameTo" placeholder="New column name">
+        <div class="grid2"><button class="btn" id="doRename">Rename</button><button class="btn danger" id="doDeleteCol">Delete</button></div>
+        <div class="grid2"><button class="btn" id="moveLeft">← Reorder</button><button class="btn" id="moveRight">Reorder →</button></div>
+        <input id="splitSep" placeholder="Split separator (e.g. -)" value="-"><button class="btn" id="doSplit">Split Column</button>
+        <select id="combineCol">${options(cols)}</select><input id="combineName" value="Combined_Field"><button class="btn" id="doCombine">Combine 2 Columns</button>
+      </div></div>`;
+  } else if(state.tab==="validate"){
+    p.innerHTML=`
+      <div class="tool-group"><h4>Validation Checklist</h4><div class="stack">
+        <button class="btn" id="validateNow">Run Validation</button>
+        <button class="btn" id="goSummary">Open Summary</button>
+      </div></div>
+      <div class="note">Quality Score ใช้ 5 มิติ: Completeness, Validity, Consistency, Uniqueness และ Data Preservation</div>`;
+  } else {
+    p.innerHTML=`
+      <div class="tool-group"><h4>Export</h4><div class="stack">
+        <button class="btn good" id="exportCsv">⬇ Export Prepared CSV</button>
+        <button class="btn" id="exportSummary">⬇ Export Learning Summary</button>
+      </div></div>
+      <div class="note">Reflection จะช่วยให้ผู้เรียนอธิบาย “เหตุผล” ของการเตรียมข้อมูล ไม่ใช่เพียงรายงานว่ากดคำสั่งใด</div>`;
+  }
+  bindToolEvents();
+}
+
+function renderWorkspace(){
+  const w=document.getElementById("workspaceContent");
+  if(state.tab==="explore") renderExplore(w);
+  if(state.tab==="clean") renderCleanIntro(w);
+  if(state.tab==="transform") renderTransformIntro(w);
+  if(state.tab==="validate") renderValidate(w);
+  if(state.tab==="summary") renderSummary(w);
+}
+function renderExplore(w){
+  const s=statsFor(state.selectedColumn);
+  let extra="";
+  if(state.view==="info") extra=infoHtml();
+  else if(state.view==="describe") extra=describeHtml();
+  else if(state.view==="missing") extra=missingHtml();
+  else if(state.view==="duplicates") extra=duplicatesHtml();
+  else if(state.view==="correlation") extra=correlationHtml();
+  else extra=`
+    <div class="card">
+      <div class="card-head"><div><h2>${state.view==="head"?"head()":state.view==="tail"?"tail()":"Dataset Preview"}</h2><p class="section-sub">คลิกชื่อคอลัมน์เพื่อเลือกสำหรับการสำรวจ</p></div><span class="badge">${state.data.length} rows</span></div>
+      <div class="card-body">${dataTableHtml()}</div>
+    </div>`;
+  w.innerHTML=`
+    <div class="card">
+      <div class="card-head"><div><h2>🔎 Column Explorer: ${state.selectedColumn}</h2><p class="section-sub">${s.kind==="numeric"?"Numeric-like":"Categorical-like"} · Missing ${s.missing} · Unique ${s.unique}</p></div><span class="badge ${s.missing?"warn":"good"}">${s.count} valid</span></div>
+      <div class="card-body">
+        <div class="stats-grid">
+          ${statBox("Type",s.kind)} ${statBox("Missing",s.missing)} ${statBox("Unique",s.unique)}
+          ${statBox(s.kind==="numeric"?"Mean":"Mode",s.kind==="numeric"?numfmt(s.mean):s.mode)}
+          ${s.kind==="numeric"?statBox("Median",numfmt(s.median))+statBox("Min",numfmt(s.min))+statBox("Max",numfmt(s.max))+statBox("Std Dev",numfmt(s.sd)):""}
+        </div>
+        <div class="chart-grid" style="margin-top:10px">
+          <div class="chart-card"><div class="chart-title">Distribution</div><canvas id="chart1" width="520" height="220"></canvas></div>
+          <div class="chart-card"><div class="chart-title">Box Plot / Frequency</div><canvas id="chart2" width="520" height="220"></canvas></div>
+        </div>
+      </div>
+    </div>${extra}`;
+  setTimeout(drawExploreCharts,0);
+  bindTableEvents();
+}
+function statBox(k,v){return `<div class="statbox"><span>${k}</span><b>${v===null||v===undefined?"—":v}</b></div>`}
+function numfmt(n){return n===null?"—":Math.abs(n)>=1000?Math.round(n).toLocaleString():Number(n.toFixed(2))}
+function dataTableHtml(){
+  let d=state.data, start=0;
+  if(state.view==="head") d=state.data.slice(0,5);
+  else if(state.view==="tail") d=state.data.slice(-5);
+  else { start=(state.page-1)*state.pageSize; d=state.data.slice(start,start+state.pageSize); }
+  const cols=columns(), dup=duplicateIndexes(state.data);
+  return `<div class="table-wrap"><table><thead><tr><th>#</th>${cols.map(c=>`<th data-col="${esc(c)}" class="${c===state.selectedColumn?"selected-col":""}">${esc(c)}</th>`).join("")}</tr></thead><tbody>
+    ${d.map((r,j)=>{
+      const globalIndex=state.view==="tail"?state.data.length-d.length+j:start+j;
+      return `<tr class="${dup.has(globalIndex)?"duplicate":""}"><td>${globalIndex+1}</td>${cols.map(c=>{
+        const v=r[c], cls=[c===state.selectedColumn?"selected-col":"",isMissing(v)?"missing":"",invalidCell(r,c)?"issue":""].filter(Boolean).join(" ");
+        return `<td class="${cls}" title="${invalidCell(r,c)?"Potential invalid value":""}">${esc(fmt(v))}</td>`}).join("")}</tr>`
+    }).join("")}</tbody></table></div>
+    ${state.view==="preview"?`<div class="pager"><span>Page ${state.page} / ${Math.max(1,Math.ceil(state.data.length/state.pageSize))}</span><span><button class="btn" id="prevPage">←</button> <button class="btn" id="nextPage">→</button></span></div>`:""}`;
+}
+function infoHtml(){
+  state.explored.add("info");
+  return `<div class="card"><div class="card-head"><h3>info() — Schema & Completeness</h3></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Column</th><th>Detected Type</th><th>Non-Null</th><th>Missing</th><th>Unique</th></tr></thead><tbody>
+  ${columns().map(c=>{const s=statsFor(c);return `<tr><td>${esc(c)}</td><td>${s.kind}</td><td>${s.count}</td><td>${s.missing}</td><td>${s.unique}</td></tr>`}).join("")}</tbody></table></div></div></div>`;
+}
+function describeHtml(){
+  state.explored.add("describe");
+  const numCols=columns().filter(c=>statsFor(c).kind==="numeric");
+  return `<div class="card"><div class="card-head"><h3>describe() — Numeric Summary</h3></div><div class="card-body"><div class="table-wrap"><table><thead><tr><th>Column</th><th>count</th><th>mean</th><th>std</th><th>min</th><th>median</th><th>max</th></tr></thead><tbody>
+  ${numCols.map(c=>{const s=statsFor(c);return `<tr><td>${c}</td><td>${s.count}</td><td>${numfmt(s.mean)}</td><td>${numfmt(s.sd)}</td><td>${numfmt(s.min)}</td><td>${numfmt(s.median)}</td><td>${numfmt(s.max)}</td></tr>`}).join("")}</tbody></table></div></div></div>`;
+}
+function missingHtml(){
+  state.explored.add("missing");
+  return `<div class="card"><div class="card-head"><h3>Missing Value Analysis</h3></div><div class="card-body">
+  ${columns().map(c=>{const n=state.data.filter(r=>isMissing(r[c])).length,p=100*n/state.data.length;return `<div style="display:grid;grid-template-columns:150px 1fr 70px;gap:8px;align-items:center;margin:7px 0"><b style="font-size:11px">${c}</b><div class="progress"><i style="width:${p}%"></i></div><span style="font-size:11px">${n} (${p.toFixed(1)}%)</span></div>`}).join("")}</div></div>`;
+}
+function duplicatesHtml(){
+  state.explored.add("duplicates"); const ids=[...duplicateIndexes()];
+  return `<div class="card"><div class="card-head"><h3>Duplicate Detection</h3><span class="badge warn">${duplicateExtraCount()} extra rows</span></div><div class="card-body"><p class="helper">แถวกรอบสีส้มเป็น exact duplicate</p>
+  <div class="table-wrap"><table><thead><tr><th>#</th><th>Customer_ID</th><th>Occupation</th><th>Income</th><th>Credit_Score</th></tr></thead><tbody>${ids.slice(0,30).map(i=>{const r=state.data[i];return `<tr class="duplicate"><td>${i+1}</td><td>${fmt(r.Customer_ID)}</td><td>${fmt(r.Occupation)}</td><td>${fmt(r.Income)}</td><td>${fmt(r.Credit_Score)}</td></tr>`}).join("")}</tbody></table></div></div></div>`;
+}
+function correlationHtml(){
+  state.explored.add("correlation");
+  const cols=columns().filter(c=>valuesFor(c).length>state.data.length*.7).slice(0,7);
+  return `<div class="card"><div class="card-head"><h3>Correlation Matrix (Pearson)</h3></div><div class="card-body">${corrGrid(cols)}</div></div>`;
+}
+function corrPair(a,b){
+  const pairs=state.data.map(r=>[numeric(r[a]),numeric(r[b])]).filter(x=>x[0]!==null&&x[1]!==null);
+  if(pairs.length<3)return 0;const xs=pairs.map(x=>x[0]),ys=pairs.map(x=>x[1]),mx=mean(xs),my=mean(ys);
+  const num=pairs.reduce((s,[x,y])=>s+(x-mx)*(y-my),0);
+  const den=Math.sqrt(pairs.reduce((s,[x])=>s+(x-mx)**2,0)*pairs.reduce((s,[,y])=>s+(y-my)**2,0));
+  return den?num/den:0;
+}
+function corrGrid(cols){
+  const n=cols.length, cells=[`<div></div>`].concat(cols.map(c=>`<b style="font-size:9px">${esc(c)}</b>`));
+  cols.forEach(a=>{cells.push(`<b style="font-size:9px">${esc(a)}</b>`);cols.forEach(b=>{const r=corrPair(a,b),alpha=.12+Math.abs(r)*.55;const bg=r>=0?`rgba(53,99,233,${alpha})`:`rgba(217,45,32,${alpha})`;cells.push(`<div class="corr-cell" style="background:${bg}">${r.toFixed(2)}</div>`)});});
+  return `<div class="corr" style="grid-template-columns:120px repeat(${n},70px)">${cells.join("")}</div>`;
+}
+
+function renderCleanIntro(w){
+  w.innerHTML=`<div class="card"><div class="card-head"><div><h2>🧹 Data Cleansing Lab</h2><p class="section-sub">เลือกปัญหาและวิธีจัดการจากแถบซ้าย ทุกคำสั่งจะแสดง Preview ก่อน Apply</p></div></div><div class="card-body">
+    <div class="compare"><div class="note"><b>หลักคิด</b><br>Cleaning ที่ดีไม่ใช่ทำให้ค่าผิดปกติเป็นศูนย์ทุกกรณี แต่ต้องรักษาความหมายของข้อมูลและลด Bias</div>
+    <div class="note"><b>Current issues</b><br>Missing ${metrics().missing} · Duplicate ${metrics().dup} · Invalid ${metrics().invalid} · Inconsistent ${metrics().incons} · Potential outlier ${metrics().out}</div></div>
+    <div style="margin-top:12px">${dataTableHtml()}</div>
+  </div></div>`;
+  bindTableEvents();
+}
+function renderTransformIntro(w){
+  w.innerHTML=`<div class="card"><div class="card-head"><div><h2>🔧 Data Transformation Lab</h2><p class="section-sub">Transform เพื่อให้รูปแบบข้อมูลเหมาะกับการวิเคราะห์/โมเดล ไม่ใช่เพียงทำให้ตัวเลข “ดูสวย”</p></div></div>
+  <div class="card-body"><div class="note">ทดลอง Encoding, Scaling, Binning และ Feature Engineering แล้วสังเกตจำนวนคอลัมน์ การกระจาย และความหมายของ Feature</div>
+  <div style="margin-top:12px">${dataTableHtml()}</div></div></div>`;
+  bindTableEvents();
+}
+function renderValidate(w){
+  const a=initialMetrics,b=metrics();
+  w.innerHTML=`<div class="card"><div class="card-head"><div><h2>✅ Before / After Validation</h2><p class="section-sub">ตรวจสอบคุณภาพและผลกระทบต่อ Dataset ก่อนส่งต่อไป Machine Learning</p></div></div><div class="card-body">
+    <div class="compare">
+      <div><h3>Original Dataset</h3>${metricTable(a)}</div>
+      <div><h3>Prepared Dataset</h3>${metricTable(b)}</div>
+    </div>
+    <div class="chart-grid" style="margin-top:14px">
+      <div class="chart-card"><div class="chart-title">Data Quality Score</div><div class="quality-ring" id="qualityRing"><div>${b.quality.toFixed(0)}%<small style="font-size:9px;color:#667085">quality</small></div></div></div>
+      <div class="chart-card"><div class="chart-title">Quality Dimensions</div>${qualityBars(b)}</div>
+    </div>
+  </div></div>`;
+  setTimeout(()=>{const el=document.getElementById("qualityRing");if(el)el.style.background=`conic-gradient(var(--primary) ${b.quality}%,#eaecf0 0)`},0);
+}
+function metricTable(m){return `<table class="metric-table"><tbody>
+  ${[["Rows",m.rows],["Columns",m.cols],["Missing",m.missing],["Duplicate",m.dup],["Invalid",m.invalid],["Inconsistent",m.incons],["Potential Outliers",m.out],["Preservation",m.preservation.toFixed(1)+"%"],["Quality",m.quality.toFixed(1)+"%"]].map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`).join("")}
+</tbody></table>`}
+function qualityBars(m){return [["Completeness",m.completeness],["Validity",m.validity],["Consistency",m.consistency],["Uniqueness",m.uniqueness],["Preservation",m.preservation]].map(([n,v])=>`<div style="margin:9px 0"><div style="display:flex;justify-content:space-between;font-size:11px"><b>${n}</b><span>${v.toFixed(1)}%</span></div><div class="progress"><i style="width:${v}%"></i></div></div>`).join("")}
+function renderSummary(w){
+  const sc=score(),m=metrics();
+  const qs=[
+    "1. Dataset เดิมมีปัญหาอะไรบ้าง",
+    "2. คุณจัดการ Missing Values ด้วยวิธีใด เพราะเหตุใด",
+    "3. คุณพบ Outlier ในตัวแปรใด",
+    "4. คุณเลือกจัดการ Outlier อย่างไร",
+    "5. Transformation ใดที่คุณใช้",
+    "6. การเตรียมข้อมูลของคุณทำให้ Dataset เปลี่ยนไปอย่างไร",
+    "7. หากนำไปสร้าง Machine Learning Model การเตรียมข้อมูลนี้อาจมีผลต่อ Model อย่างไร"
+  ];
+  w.innerHTML=`<div class="card"><div class="card-head"><div><h2>🏁 Learning Summary & Reflection</h2><p class="section-sub">Score ${sc.total}/100 · Data Quality ${m.quality.toFixed(1)}%</p></div></div><div class="card-body">
+    <div class="score-grid">${[
+      ["Problem Detection",sc.detection,20],["Cleansing Decision",sc.cleansing,25],["Transformation",sc.transformation,20],
+      ["Data Preservation",sc.preservation,15],["Quality Improvement",sc.quality,10],["Efficiency",sc.efficiency,10]
+    ].map(x=>`<div class="score-card"><span class="helper">${x[0]}</span><br><b>${x[1].toFixed(1)}</b> / ${x[2]}<div class="progress"><i style="width:${100*x[1]/x[2]}%"></i></div></div>`).join("")}</div>
+    <h3 style="margin-top:18px">Reflection</h3>
+    <div class="stack">${qs.map((q,i)=>`<label>${q}<textarea data-reflect="${i}" placeholder="อธิบายเหตุผลจากสิ่งที่คุณทดลอง...">${esc(state.reflections[i])}</textarea></label>`).join("")}</div>
+  </div></div>`;
+  document.querySelectorAll("[data-reflect]").forEach(t=>t.addEventListener("input",e=>state.reflections[+e.target.dataset.reflect]=e.target.value));
+}
+
+function renderPipeline(){
+  document.getElementById("pipelineList").innerHTML=state.pipeline.map((s,i)=>`<div class="step"><span class="step-num">${i+1}</span><div><b style="font-size:11px">${esc(s.label)}</b><small>${esc(s.type||"operation")} · ${esc(s.time||"")}</small></div></div>`).join("");
+}
+function renderMissions(){
+  const ms=missions();
+  document.getElementById("missions").innerHTML=ms.map(x=>`<div class="mission ${x.done?"done":""}"><div class="row"><b>${x.name}</b><span class="badge ${x.done?"good":"warn"}">${x.done?"Done":"In progress"}</span></div><div class="helper" style="margin:5px 0">${x.desc}</div><div class="progress"><i style="width:${x.progress}%"></i></div></div>`).join("");
+}
+
+/* ------------------------------- charts ----------------------------------- */
+function prepCanvas(id){
+  const c=document.getElementById(id); if(!c)return null; const dpr=window.devicePixelRatio||1;
+  const cssW=c.clientWidth||500, cssH=200; c.width=cssW*dpr;c.height=cssH*dpr;const ctx=c.getContext("2d");ctx.scale(dpr,dpr);return {c,ctx,w:cssW,h:cssH};
+}
+function drawExploreCharts(){
+  const s=statsFor(state.selectedColumn);
+  if(s.kind==="numeric"){drawHistogram("chart1",state.selectedColumn);drawBox("chart2",state.selectedColumn)}
+  else {drawBar("chart1",state.selectedColumn);drawBar("chart2",state.selectedColumn,true)}
+}
+function drawAxes(ctx,w,h){
+  ctx.strokeStyle="#d0d5dd";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(38,12);ctx.lineTo(38,h-26);ctx.lineTo(w-10,h-26);ctx.stroke();
+}
+function drawHistogram(id,col){
+  const z=prepCanvas(id);if(!z)return;const {ctx,w,h}=z,vals=valuesFor(col);ctx.clearRect(0,0,w,h);drawAxes(ctx,w,h);if(!vals.length)return;
+  const min=Math.min(...vals),max=Math.max(...vals),bins=12,step=(max-min||1)/bins,counts=Array(bins).fill(0);
+  vals.forEach(v=>{let i=Math.floor((v-min)/step);if(i>=bins)i=bins-1;counts[i]++});
+  const mx=Math.max(...counts),plotW=w-55,barW=plotW/bins;
+  counts.forEach((n,i)=>{const bh=(h-48)*n/mx;ctx.fillStyle="#6e8efb";ctx.fillRect(40+i*barW,h-27-bh,Math.max(2,barW-2),bh)});
+  ctx.fillStyle="#667085";ctx.font="10px sans-serif";ctx.fillText(numfmt(min),38,h-9);ctx.fillText(numfmt(max),w-55,h-9);
+}
+function drawBox(id,col){
+  const z=prepCanvas(id);if(!z)return;const {ctx,w,h}=z,v=valuesFor(col);ctx.clearRect(0,0,w,h);if(!v.length)return;
+  const min=Math.min(...v),max=Math.max(...v),q1=quantile(v,.25),med=quantile(v,.5),q3=quantile(v,.75),oi=outlierInfo(col),lo=Math.max(min,oi.lower),hi=Math.min(max,oi.upper);
+  const x=n=>40+(w-70)*(n-min)/(max-min||1), y=h/2;
+  ctx.strokeStyle="#344054";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x(lo),y);ctx.lineTo(x(hi),y);ctx.stroke();
+  ctx.fillStyle="#d9e3ff";ctx.strokeStyle="#3563e9";ctx.fillRect(x(q1),y-35,x(q3)-x(q1),70);ctx.strokeRect(x(q1),y-35,x(q3)-x(q1),70);
+  ctx.beginPath();ctx.moveTo(x(med),y-35);ctx.lineTo(x(med),y+35);ctx.stroke();
+  oi.flagged.slice(0,30).forEach(i=>{const n=numeric(state.data[i][col]);ctx.beginPath();ctx.fillStyle="#d92d20";ctx.arc(x(n),y,3,0,Math.PI*2);ctx.fill()});
+  ctx.fillStyle="#667085";ctx.font="10px sans-serif";ctx.fillText("Q1 "+numfmt(q1),x(q1)-10,y+55);ctx.fillText("Median "+numfmt(med),x(med)-20,y-45);ctx.fillText("Q3 "+numfmt(q3),x(q3)-10,y+55);
+}
+function drawBar(id,col,normalize=false){
+  const z=prepCanvas(id);if(!z)return;const {ctx,w,h}=z;ctx.clearRect(0,0,w,h);
+  const m=new Map();state.data.forEach(r=>{if(!isMissing(r[col])){const k=String(r[col]);m.set(k,(m.get(k)||0)+1)}});
+  let a=[...m.entries()].sort((x,y)=>y[1]-x[1]).slice(0,10);const mx=Math.max(1,...a.map(x=>x[1]));
+  a.forEach(([k,n],i)=>{const y=10+i*18, bw=(w-150)*(normalize?n/state.data.length:n/mx);ctx.fillStyle="#6e8efb";ctx.fillRect(115,y,bw,12);ctx.fillStyle="#344054";ctx.font="10px sans-serif";ctx.fillText(k.slice(0,16),5,y+10);ctx.fillText(normalize?(100*n/state.data.length).toFixed(1)+"%":n,120+bw,y+10)});
+}
+
+/* -------------------------- operations + modal ---------------------------- */
+function operationPreview(title,desc,fn,type="clean",feedback=""){
+  const before=snapshot(), candidate=deepData(state.data);
+  let result;
+  try{ result=fn(candidate); }catch(e){toast("Operation error: "+e.message);return;}
+  const afterData=result&&result.data?result.data:candidate;
+  const bm=metrics(state.data), am=metrics(afterData);
+  document.getElementById("modalRoot").innerHTML=`
+    <div class="modal-backdrop"><div class="modal">
+      <div class="modal-head"><div><b>${esc(title)}</b><div class="helper">${esc(desc)}</div></div><button class="btn" id="closeModal">✕</button></div>
+      <div class="modal-body">
+        <div class="preview-grid">
+          <div><h4>Before</h4><div class="codebox">${esc(previewRows(state.data))}</div></div>
+          <div><h4>After Preview</h4><div class="codebox">${esc(previewRows(afterData))}</div></div>
+        </div>
+        <h4>Impact Preview</h4>
+        <div class="stats-grid">
+          ${statBox("Rows",`${bm.rows} → ${am.rows}`)}
+          ${statBox("Columns",`${bm.cols} → ${am.cols}`)}
+          ${statBox("Missing",`${bm.missing} → ${am.missing}`)}
+          ${statBox("Quality",`${bm.quality.toFixed(1)} → ${am.quality.toFixed(1)}%`)}
+        </div>
+        ${result&&result.note?`<div class="note" style="margin-top:12px">${esc(result.note)}</div>`:""}
+      </div>
+      <div class="modal-foot"><button class="btn" id="cancelModal">Cancel</button><button class="btn primary" id="applyModal">Apply Operation</button></div>
+    </div></div>`;
+  const close=()=>document.getElementById("modalRoot").innerHTML="";
+  document.getElementById("closeModal").onclick=close;document.getElementById("cancelModal").onclick=close;
+  document.getElementById("applyModal").onclick=()=>{
+    state.undo.push(before); if(state.undo.length>25)state.undo.shift(); state.redo=[];
+    state.data=afterData; state.pipeline.push({label:desc,type,time:new Date().toLocaleTimeString("th-TH")});
+    state.totalOps++;if(type==="transform")state.transformOps++;
+    close(); setFeedback(title,feedback||`Applied: ${desc}. ตรวจสอบผลใน Data Quality และ Pipeline ก่อนทำขั้นตอนถัดไป`);
+    state.page=1;renderAll();toast("Applied successfully");
+  };
+}
+function previewRows(d){return d.slice(0,6).map((r,i)=>`${i+1}. ${JSON.stringify(r)}`).join("\n")}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]))}
+
+/* ----------------------------- tool actions -------------------------------- */
+function bindToolEvents(){
+  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{state.view=b.dataset.view;state.explored.add(state.view);state.page=1;renderAll()});
+  const cs=document.getElementById("columnSelect");if(cs)cs.onchange=e=>{state.selectedColumn=e.target.value;state.explored.add("column");renderAll()};
+  document.querySelectorAll("[data-chart]").forEach(b=>b.onclick=()=>{state.explored.add(b.dataset.chart);setFeedback("Visualization",`สำรวจ ${state.selectedColumn} ด้วย ${b.dataset.chart==="hist"?"Histogram":b.dataset.chart==="box"?"Box Plot":"Frequency"} แล้วพิจารณารูปร่างการกระจายก่อนเลือกวิธี Cleaning`);renderAll()});
+  document.querySelectorAll("[data-detect]").forEach(x=>x.onchange=e=>{e.target.checked?state.detected.add(e.target.dataset.detect):state.detected.delete(e.target.dataset.detect);renderTop();renderMissions()});
+
+  const pm=document.getElementById("previewMissing");if(pm)pm.onclick=cleanMissing;
+  const pd=document.getElementById("previewDup");if(pd)pd.onclick=cleanDuplicates;
+  const pi=document.getElementById("previewInvalid");if(pi)pi.onclick=cleanInvalid;
+  const ps=document.getElementById("previewStandardize");if(ps)ps.onclick=cleanStandardize;
+  const po=document.getElementById("previewOutlier");if(po)po.onclick=cleanOutlier;
+
+  bind("doType",transformType);bind("doEncode",transformEncode);bind("doScale",transformScale);bind("doBin",transformBin);bind("doFeature",transformFeature);
+  bind("doRename",transformRename);bind("doDeleteCol",transformDelete);bind("moveLeft",()=>moveColumn(-1));bind("moveRight",()=>moveColumn(1));
+  bind("doSplit",transformSplit);bind("doCombine",transformCombine);
+  bind("validateNow",()=>{setFeedback("Validation Result",`Quality ${metrics().quality.toFixed(1)}% · Preservation ${metrics().preservation.toFixed(1)}%. ตรวจว่าการเพิ่มคุณภาพแลกมาด้วยการสูญเสียข้อมูลมากเกินไปหรือไม่`);renderAll()});
+  bind("goSummary",()=>{state.tab="summary";renderAll()});
+  bind("exportCsv",exportCsv);bind("exportSummary",exportSummary);
+}
+function bind(id,fn){const x=document.getElementById(id);if(x)x.onclick=fn}
+function cleanMissing(){
+  const col=document.getElementById("missCol").value, act=document.getElementById("missAction").value, custom=document.getElementById("missCustom").value;
+  let desc=`${act} missing values in ${col}`;
+  operationPreview("Missing Value Treatment",desc,data=>{
+    const n=data.filter(r=>isMissing(r[col])).length;if(!n)return {data,note:"ไม่พบ Missing Value ในคอลัมน์นี้"};
+    if(act==="dropRow") data=data.filter(r=>!isMissing(r[col]));
+    else if(act==="dropCol") data.forEach(r=>delete r[col]);
+    else{
+      const nums=data.map(r=>numeric(r[col])).filter(v=>v!==null), raw=data.map(r=>r[col]);
+      let fill=act==="mean"?mean(nums):act==="median"?median(nums):act==="mode"?modeRaw(raw):custom;
+      data.forEach(r=>{if(isMissing(r[col]))r[col]=fill});
+      if(act==="mean"){
+        const oi=outlierInfo(col,state.data); return {data,note:oi.flagged.length?`พบ potential outlier ${oi.flagged.length} รายการ: Mean อาจถูกลากด้วยค่าปลาย ควรเปรียบเทียบ Median`:"Mean เหมาะขึ้นเมื่อการกระจายไม่เบ้มากและไม่มี outlier รุนแรง"};
+      }
+    }
+    return {data,note:act==="dropRow"?"การ Drop Row ลด Missing แต่ลด Data Preservation ด้วย":act==="dropCol"?"การ Drop Column อาจทำให้สูญเสีย Feature สำคัญ":"ตรวจ distribution หลัง imputation ทุกครั้ง"};
+  },"clean",act==="dropRow"?"Missing ลดลง แต่ควรตรวจว่าการลบแถวทำให้กลุ่มตัวอย่างบางกลุ่มหายไปหรือไม่":"Imputation เปลี่ยน distribution ได้ จึงควรเปรียบเทียบ Before/After");
+}
+function cleanDuplicates(){
+  const act=document.getElementById("dupAction").value;
+  if(act==="ignore"){setFeedback("Duplicate Decision","คุณเลือก Keep/Ignore ซึ่งอาจถูกต้องหากแถวที่เหมือนกันเป็นเหตุการณ์คนละรายการ แต่สำหรับ exact duplicate ในชุดนี้ควรตรวจ Customer_ID เพิ่ม");return}
+  operationPreview("Duplicate Treatment",`${act==="first"?"Keep First":act==="last"?"Keep Last":"Delete Both"} exact duplicates`,data=>{
+    const map=new Map();
+    if(act==="first") data=data.filter(r=>{const k=JSON.stringify(r);if(map.has(k))return false;map.set(k,1);return true});
+    if(act==="last"){const seen=new Set();data=[...data].reverse().filter(r=>{const k=JSON.stringify(r);if(seen.has(k))return false;seen.add(k);return true}).reverse()}
+    if(act==="both"){const counts={};data.forEach(r=>counts[JSON.stringify(r)]=(counts[JSON.stringify(r)]||0)+1);data=data.filter(r=>counts[JSON.stringify(r)]===1)}
+    return {data,note:act==="both"?"Delete Both อาจทำให้ข้อมูลจริงหายไปทั้งสองแถว ใช้เมื่อยืนยันได้ว่าไม่ต้องเก็บระเบียนใดเลย":"Exact duplicate ถูกลดลงโดยเก็บหนึ่ง record"};
+  },"clean","การจัดการ Duplicate ควรระบุ business key ด้วย ในข้อมูลจริง “แถวเหมือนกัน” ไม่ได้แปลว่าเป็น duplicate เสมอ");
+}
+function cleanInvalid(){
+  const col=document.getElementById("invalidCol").value,act=document.getElementById("invalidAction").value;
+  if(act==="keep"){setFeedback("Invalid Value Decision",`คุณเลือก Keep ค่า invalid ใน ${col}; ทำได้เมื่อมีเหตุผลจาก domain แต่ควร document ข้อยกเว้น`);return}
+  operationPreview("Invalid Value Treatment",`${act} invalid values in ${col}`,data=>{
+    const med=median(valuesFor(col,state.data));
+    if(act==="remove")data=data.filter(r=>!invalidCell(r,col));
+    else data.forEach(r=>{if(invalidCell(r,col))r[col]=act==="missing"?null:med});
+    return {data,note:act==="remove"?"การลบแถวแก้ invalid โดยตรงแต่ลด preservation":"การ Convert to Missing แยกขั้นตอน validation ออกจาก imputation ได้ชัดเจน"};
+  },"clean","ค่า invalid ต้องอาศัย domain rules; เช่น Credit Score 920 ไม่ใช่ outlier ธรรมดาแต่ผิดช่วงที่ยอมรับ");
+}
+function cleanStandardize(){
+  const col=document.getElementById("catCol").value;
+  operationPreview("Category Standardization",`Standardize ${col}`,data=>{
+    data.forEach(r=>{if(!isMissing(r[col]))r[col]=normalizeCategory(col,r[col])});
+    return {data,note:"Standardization ลด cardinality เทียม เช่น Teacher / teacher / TEACHER ให้เป็น category เดียว"};
+  },"clean","การทำให้ Category สม่ำเสมอช่วยให้การนับความถี่และ Encoding ไม่สร้างหมวดหมู่หลอก");
+}
+function cleanOutlier(){
+  const col=document.getElementById("outCol").value,method=document.getElementById("outMethod").value,act=document.getElementById("outAction").value;
+  const oi=outlierInfo(col,state.data,method);
+  if(act==="keep"){setFeedback("Outlier Decision",`พบ ${oi.flagged.length} potential outliers ใน ${col}. การ Keep อาจถูกต้องหากเป็นค่าจริงที่สำคัญต่อความเสี่ยง`);return}
+  operationPreview("Outlier Treatment",`${act} ${col} using ${method.toUpperCase()}`,data=>{
+    const info=outlierInfo(col,data,method), med=median(valuesFor(col,data)),flag=new Set(info.flagged);
+    if(act==="remove")data=data.filter((r,i)=>!flag.has(i));
+    else data.forEach((r,i)=>{if(flag.has(i)){const n=numeric(r[col]);r[col]=act==="cap"?clamp(n,info.lower,info.upper):med}});
+    return {data,note:`Detected ${info.flagged.length} potential outliers. Bounds ≈ ${numfmt(info.lower)} to ${numfmt(info.upper)}. “Outlier” ไม่เท่ากับ “ผิด” ต้องอิงบริบทด้วย`};
+  },"clean",method==="iqr"?"IQR robust กว่า z-score เมื่อ distribution เบ้หรือมี extreme values":"Z-score เหมาะกว่าเมื่อข้อมูลใกล้ normal distribution");
+}
+function transformType(){
+  const col=document.getElementById("typeCol").value,act=document.getElementById("typeAction").value;
+  operationPreview("Data Type Conversion",`Convert ${col} to ${act}`,data=>{
+    data.forEach(r=>{if(!isMissing(r[col])){if(act==="string")r[col]=String(r[col]);else{const n=numeric(r[col]);r[col]=n===null?null:n}}});
+    return {data,note:act==="number"?"ค่าที่แปลงเป็น Number ไม่ได้จะถูก Convert เป็น Missing เพื่อให้ตรวจต่อได้":"การแปลงเป็น String อาจกระทบสถิติเชิงตัวเลข"};
+  },"transform","Data type ที่ถูกต้องทำให้ aggregation, scaling และ model preprocessing ทำงานตามความหมายของข้อมูล");
+}
+function transformEncode(){
+  const col=document.getElementById("encCol").value,act=document.getElementById("encAction").value;
+  operationPreview("Categorical Encoding",`${act==="label"?"Label":"One-Hot"} encode ${col}`,data=>{
+    const cats=[...new Set(data.map(r=>r[col]).filter(v=>!isMissing(v)).map(String))].sort();
+    if(act==="label"){const map=new Map(cats.map((v,i)=>[v,i]));data.forEach(r=>{if(!isMissing(r[col]))r[col]=map.get(String(r[col]))});}
+    else{data.forEach(r=>{cats.forEach(v=>r[`${col}_${safeName(v)}`]=String(r[col])===v?1:0);delete r[col]})}
+    return {data,note:act==="label"?"Label Encoding สร้างลำดับตัวเลข ซึ่งอาจทำให้บาง model เข้าใจว่า category มี order":"One-Hot ไม่สร้าง ordinal relation แต่เพิ่มจำนวน features"};
+  },"transform",act==="label"?"ระวัง “ลำดับปลอม” ที่เกิดจากเลข label":"One-Hot เหมาะกับ nominal category แต่ถ้า cardinality สูงอาจทำให้ feature space ใหญ่");
+}
+function safeName(s){return String(s).trim().replace(/[^\w]+/g,"_").replace(/^_|_$/g,"")}
+function transformScale(){
+  const col=document.getElementById("scaleCol").value,act=document.getElementById("scaleAction").value;
+  operationPreview("Feature Scaling",`${act==="norm"?"Normalize":"Standardize"} ${col}`,data=>{
+    const vals=valuesFor(col,data),mn=Math.min(...vals),mx=Math.max(...vals),mu=mean(vals),s=sd(vals);
+    data.forEach(r=>{const n=numeric(r[col]);if(n!==null)r[col]=act==="norm"?(n-mn)/(mx-mn||1):(n-mu)/(s||1)});
+    return {data,note:act==="norm"?"Normalization: x'=(x-min)/(max-min)":"Standardization: z=(x-μ)/σ"};
+  },"transform",act==="norm"?"Normalization บีบช่วงเป็น 0–1 และไวต่อ extreme min/max":"Standardization ทำให้ mean≈0, sd≈1 แต่ไม่ได้ทำให้ distribution เป็น normal");
+}
+function transformBin(){
+  const col=document.getElementById("binCol").value, newc=col+"_Band";
+  operationPreview("Binning",`Create ${newc} from ${col}`,data=>{
+    const vals=valuesFor(col,data),q1=quantile(vals,.25),q2=quantile(vals,.5),q3=quantile(vals,.75);
+    data.forEach(r=>{const n=numeric(r[col]);r[newc]=n===null?null:n<=q1?"Low":n<=q2?"Mid-Low":n<=q3?"Mid-High":"High"});
+    return {data,note:`ใช้ quartile bins: Q1=${numfmt(q1)}, Median=${numfmt(q2)}, Q3=${numfmt(q3)}`};
+  },"transform","Binning ลดรายละเอียดของค่าต่อเนื่องแลกกับการตีความที่ง่ายขึ้น จึงอาจสูญเสียสัญญาณบางส่วน");
+}
+function transformFeature(){
+  const a=document.getElementById("featA").value,b=document.getElementById("featB").value,name=document.getElementById("featName").value.trim()||`${a}_to_${b}`;
+  operationPreview("Feature Engineering",`Create ${name} = ${a} / ${b}`,data=>{
+    data.forEach(r=>{const x=numeric(r[a]),y=numeric(r[b]);r[name]=(x===null||y===null||y===0)?null:x/y});
+    return {data,note:"Ratio feature อาจสื่อความหมายเชิง domain ได้ดีกว่าค่าดิบ แต่ต้องระวังหารด้วยศูนย์และ missing"};
+  },"transform","Feature Engineering ควรมีเหตุผลจากโจทย์ เช่น Debt-to-Income สื่อภาระหนี้เทียบความสามารถในการหารายได้");
+}
+function transformRename(){
+  const col=document.getElementById("colOpCol").value,n=document.getElementById("renameTo").value.trim();if(!n)return toast("กรอกชื่อคอลัมน์ใหม่");
+  operationPreview("Column Rename",`Rename ${col} → ${n}`,data=>{data.forEach(r=>{r[n]=r[col];delete r[col]});return {data}},"transform","Rename ช่วยให้ schema สื่อความหมายและสอดคล้องกับมาตรฐานของ pipeline");
+}
+function transformDelete(){
+  const col=document.getElementById("colOpCol").value;
+  operationPreview("Column Delete",`Delete column ${col}`,data=>{data.forEach(r=>delete r[col]);return {data,note:"การลบ feature อาจเพิ่มความง่าย แต่ข้อมูลที่สูญเสียย้อนกลับไม่ได้หากไม่มี original dataset"}},"transform","ตรวจว่า feature ที่ลบเป็น redundant, leakage หรือไม่จำเป็นจริง ก่อนตัดสินใจ");
+}
+function moveColumn(dir){
+  const col=document.getElementById("colOpCol").value;
+  operationPreview("Column Reorder",`Move ${col} ${dir<0?"left":"right"}`,data=>{
+    const cs=Object.keys(data[0]||{}),i=cs.indexOf(col),j=clamp(i+dir,0,cs.length-1);[cs[i],cs[j]]=[cs[j],cs[i]];
+    data=data.map(r=>Object.fromEntries(cs.map(c=>[c,r[c]])));return {data}
+  },"transform","Reorder เปลี่ยน presentation/schema order แต่ไม่เปลี่ยนความหมายเชิงสถิติ");
+}
+function transformSplit(){
+  const col=document.getElementById("colOpCol").value,sep=document.getElementById("splitSep").value||"-";
+  operationPreview("Column Split",`Split ${col} by "${sep}"`,data=>{
+    data.forEach(r=>{const parts=isMissing(r[col])?[]:String(r[col]).split(sep);r[col+"_part1"]=parts[0]??null;r[col+"_part2"]=parts.slice(1).join(sep)||null});
+    return {data,note:"Split จะสร้าง 2 columns และคง column ต้นฉบับไว้เพื่อให้ตรวจสอบย้อนกลับได้"};
+  },"transform","การ Split string ควรตรวจรูปแบบที่ไม่สม่ำเสมอก่อน มิฉะนั้นส่วนที่ได้อาจคลาดตำแหน่ง");
+}
+function transformCombine(){
+  const a=document.getElementById("colOpCol").value,b=document.getElementById("combineCol").value,n=document.getElementById("combineName").value.trim()||"Combined_Field";
+  operationPreview("Column Combine",`Combine ${a} + ${b} → ${n}`,data=>{data.forEach(r=>r[n]=`${isMissing(r[a])?"":r[a]} | ${isMissing(r[b])?"":r[b]}`);return {data}},"transform","Combine มีประโยชน์กับ presentation หรือ composite key แต่สำหรับ ML ควรระวังการรวม numeric เป็น text โดยไม่จำเป็น");
+}
+
+/* ------------------------- navigation, undo, reset ------------------------ */
+document.getElementById("navtabs").onclick=e=>{const b=e.target.closest("[data-tab]");if(!b)return;state.tab=b.dataset.tab;renderAll()};
+document.getElementById("undoBtn").onclick=()=>{
+  if(!state.undo.length)return;state.redo.push(snapshot());const s=state.undo.pop();restore(s);setFeedback("Undo","ย้อนกลับหนึ่งขั้นตอนแล้ว ตรวจ Pipeline และ Data Quality เพื่อดูผล");renderAll()
+};
+document.getElementById("redoBtn").onclick=()=>{
+  if(!state.redo.length)return;state.undo.push(snapshot());const s=state.redo.pop();restore(s);setFeedback("Redo","ทำขั้นตอนที่ Undo ไว้กลับมาแล้ว");renderAll()
+};
+document.getElementById("resetBtn").onclick=()=>{
+  if(!confirm("Reset dataset และคะแนนจากการปฏิบัติทั้งหมดหรือไม่?"))return;
+  state.data=deepData(originalData);state.pipeline=[{label:"Load Dataset",type:"system",time:new Date().toLocaleTimeString("th-TH")}];state.undo=[];state.redo=[];
+  state.detected=new Set();state.explored=new Set();state.transformOps=0;state.totalOps=0;state.page=1;state.tab="explore";state.view="preview";state.selectedColumn="Income";
+  setFeedback("Reset Complete","Dataset กลับสู่สถานะเริ่มต้นแล้ว เริ่มสำรวจใหม่โดยยังไม่รีบแก้ปัญหา");renderAll();
+};
+function bindTableEvents(){
+  document.querySelectorAll("th[data-col]").forEach(x=>x.onclick=()=>{state.selectedColumn=x.dataset.col;renderAll()});
+  bind("prevPage",()=>{state.page=Math.max(1,state.page-1);renderAll()});
+  bind("nextPage",()=>{state.page=Math.min(Math.ceil(state.data.length/state.pageSize),state.page+1);renderAll()});
+}
+document.querySelector(".feedback").addEventListener("click",e=>{
+  const b=e.target.closest("[data-help]");if(!b)return;const col=state.selectedColumn,s=statsFor(col),m=metrics();
+  const msgs={
+    hint:`Hint: ลองดู Missing/describe() และ Box Plot ของ ${col} แล้วเปรียบเทียบค่ากลางกับค่าปลายก่อนเลือก Cleaning`,
+    why:`Why? เพราะ Data Preparation เปลี่ยน distribution และอาจเปลี่ยน decision boundary ของ model; ทุกขั้นตอนจึงควรมีเหตุผลจากข้อมูลและ domain`,
+    formula:s.kind==="numeric"?`Formula: mean = Σx/n · median = Q2 · IQR = Q3-Q1 · z=(x-μ)/σ`:`Frequency(category) = count(category)/N; ตรวจ spelling/case/space ก่อน Encoding`,
+    explain:`Current result: Quality ${m.quality.toFixed(1)}%, Preservation ${m.preservation.toFixed(1)}%, Missing ${m.missing}, Invalid ${m.invalid}, Duplicate ${m.dup}. จุดที่ดีขึ้นต้องพิจารณาควบคู่กับข้อมูลที่สูญเสีย`
+  };setFeedback(b.textContent,msgs[b.dataset.help]);
+});
+
+/* -------------------------------- export ---------------------------------- */
+function exportCsv(){
+  const cs=columns(), q=v=>`"${String(isMissing(v)?"":v).replace(/"/g,'""')}"`;
+  const csv=[cs.map(q).join(","),...state.data.map(r=>cs.map(c=>q(r[c])).join(","))].join("\n");
+  downloadBlob("\ufeff"+csv,"prepared_credit_risk_dataset.csv","text/csv;charset=utf-8");
+}
+function exportSummary(){
+  const obj={score:score(),metrics:metrics(),detected:[...state.detected],pipeline:state.pipeline,reflection:state.reflections};
+  downloadBlob(JSON.stringify(obj,null,2),"data_preparation_learning_summary.json","application/json");
+}
+function downloadBlob(content,name,type){
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+
+/* ====================== v2 evidence-based learning flow ====================== */
+state.problemCards=[];
+state.cleanOps=0;
+state.validationRuns=0;
+state.validationNote="";
+state.reflections=["","","",""];
+state.nextProblemId=1;
+
+const v2ProblemTypes=["Missing Values","Duplicate Records","Invalid Values","Outliers","Inconsistent Categories","Incorrect Data Types","Imbalanced Data","Typographical Errors"];
+const evidenceSources=["Data Table","info() / Schema","Summary Statistics","Histogram","Box Plot / IQR","Bar Chart / Frequency","Correlation Heatmap","Missing Value Analysis","Duplicate Detection","Domain Rule"];
+const decisionOptions=["KEEP","REMOVE","REPLACE","TRANSFORM","INVESTIGATE"];
+
+function evidenceComplete(p){return !!(p.evidenceSource && p.evidenceText && p.evidenceText.trim().length>=8)}
+function decisionComplete(p){return evidenceComplete(p) && !!(p.decision && p.reason && p.reason.trim().length>=8)}
+function exploredEnough(){return state.explored.size>=5}
+function detectedEnough(){return state.problemCards.length>=3}
+function evidencedEnough(){return state.problemCards.filter(evidenceComplete).length>=3}
+function decidedEnough(){return state.problemCards.filter(decisionComplete).length>=3}
+function reflectionsDone(){return state.reflections.filter(x=>x.trim().length>=12).length}
+function stageUnlocked(tab){
+  if(tab==="explore")return true;
+  if(tab==="detect")return exploredEnough();
+  if(tab==="evidence")return detectedEnough();
+  if(tab==="decide")return evidencedEnough();
+  if(tab==="cleantransform")return decidedEnough();
+  if(tab==="validate")return state.totalOps>=1 && decidedEnough();
+  if(tab==="reflect")return state.validationRuns>=1;
+  return true;
+}
+function stageReason(tab){
+  if(tab==="detect")return `สำรวจอย่างน้อย 5 รายการก่อน (ปัจจุบัน ${state.explored.size}/5)`;
+  if(tab==="evidence")return `สร้าง Problem Card อย่างน้อย 3 รายการก่อน (ปัจจุบัน ${state.problemCards.length}/3)`;
+  if(tab==="decide")return `เพิ่ม Evidence ให้ Problem Card อย่างน้อย 3 รายการก่อน (ปัจจุบัน ${state.problemCards.filter(evidenceComplete).length}/3)`;
+  if(tab==="cleantransform")return `ตัดสินใจพร้อมเหตุผลอย่างน้อย 3 ปัญหาก่อน (ปัจจุบัน ${state.problemCards.filter(decisionComplete).length}/3)`;
+  if(tab==="validate")return `ต้องมีการ Apply อย่างน้อย 1 ขั้นตอน และผ่าน Decide ก่อน`;
+  if(tab==="reflect")return `Run Validation อย่างน้อย 1 ครั้งก่อน`;
+  return "";
+}
+function flowHtml(){
+  const items=[["explore","Explore"],["detect","Detect"],["evidence","Evidence"],["decide","Decide"],["cleantransform","Clean/Transform"],["validate","Validate"],["reflect","Reflect"]];
+  return `<div class="flow-banner">${items.map(([t,n])=>`<span class="flow-chip ${state.tab===t?"current":stageUnlocked(t)?"done":""}">${n}</span>`).join("")}</div>`;
+}
+function lockHtml(tab){return `<div class="lock-card"><h3>🔒 ขั้นตอนนี้ยังไม่เปิด</h3><p>${esc(stageReason(tab))}</p><button class="btn soft" data-go="explore">กลับไปสำรวจข้อมูล</button></div>`}
+
+const baseSnapshot=snapshot, baseRestore=restore;
+snapshot=function(){const x=baseSnapshot();return {...x,problemCards:deepData(state.problemCards),cleanOps:state.cleanOps,validationRuns:state.validationRuns,validationNote:state.validationNote,nextProblemId:state.nextProblemId}};
+restore=function(x){baseRestore(x);state.problemCards=deepData(x.problemCards||[]);state.cleanOps=x.cleanOps||0;state.validationRuns=x.validationRuns||0;state.validationNote=x.validationNote||"";state.nextProblemId=x.nextProblemId||1};
+
+score=function(){
+  const m=metrics();
+  const exploration=Math.min(15,state.explored.size/6*15);
+  const detection=Math.min(15,state.problemCards.length/5*15);
+  const evidence=Math.min(15,state.problemCards.filter(evidenceComplete).length/5*15);
+  const decision=Math.min(20,state.problemCards.filter(decisionComplete).length/5*20);
+  const practice=Math.min(15,(state.cleanOps+state.transformOps)/5*15);
+  const validation=state.validationRuns?10:0;
+  const preservation=5*Math.max(0,Math.min(1,m.preservation/95));
+  const reflection=5*Math.min(1,reflectionsDone()/4);
+  return {exploration,detection,evidence,decision,practice,validation,preservation,reflection,total:Math.round(exploration+detection+evidence+decision+practice+validation+preservation+reflection)};
+};
+missions=function(){
+  const m=metrics();
+  return [
+    {name:"Mission 1",desc:"Explore อย่างน้อย 5 เครื่องมือ/มุมมอง",done:exploredEnough(),progress:Math.min(100,state.explored.size/5*100)},
+    {name:"Mission 2",desc:"สร้าง Problem Card ≥ 3",done:detectedEnough(),progress:Math.min(100,state.problemCards.length/3*100)},
+    {name:"Mission 3",desc:"มี Evidence รองรับ ≥ 3 ปัญหา",done:evidencedEnough(),progress:Math.min(100,state.problemCards.filter(evidenceComplete).length/3*100)},
+    {name:"Mission 4",desc:"ตัดสินใจพร้อม Reason ≥ 3 ปัญหา",done:decidedEnough(),progress:Math.min(100,state.problemCards.filter(decisionComplete).length/3*100)},
+    {name:"Mission 5",desc:"ทดลอง Clean/Transform ≥ 3 ขั้นตอน",done:(state.cleanOps+state.transformOps)>=3,progress:Math.min(100,(state.cleanOps+state.transformOps)/3*100)},
+    {name:"Mission 6",desc:"Run Validation และรักษา Data Preservation",done:state.validationRuns>=1&&m.preservation>=85,progress:state.validationRuns?Math.min(100,m.preservation/85*100):0},
+    {name:"Mission 7",desc:"ตอบ Reflection ครบ 4 ข้อ",done:reflectionsDone()>=4,progress:Math.min(100,reflectionsDone()/4*100)}
+  ];
+};
+renderTop=function(){const ms=missions(),sc=score();document.getElementById("topMission").textContent=`${ms.filter(x=>x.done).length}/${ms.length}`;document.getElementById("topScore").textContent=sc.total};
+
+function updateNavLocks(){document.querySelectorAll(".navtab").forEach(b=>{const unlocked=stageUnlocked(b.dataset.tab);b.disabled=!unlocked;b.classList.toggle("locked",!unlocked);b.title=unlocked?"":stageReason(b.dataset.tab)})}
+renderAll=function(){
+  renderTop();renderTools();renderKpis();renderWorkspace();renderPipeline();renderMissions();
+  document.getElementById("feedbackTitle").textContent=state.feedback.title;document.getElementById("feedbackText").textContent=state.feedback.text;
+  document.querySelectorAll(".navtab").forEach(b=>b.classList.toggle("active",b.dataset.tab===state.tab));
+  document.getElementById("undoBtn").disabled=!state.undo.length;document.getElementById("redoBtn").disabled=!state.redo.length;updateNavLocks();
+};
+
+document.getElementById("navtabs").onclick=e=>{const b=e.target.closest("[data-tab]");if(!b)return;if(!stageUnlocked(b.dataset.tab)){toast(stageReason(b.dataset.tab));return}state.tab=b.dataset.tab;renderAll()};
+
+function renderExploreV2(w){renderExplore(w);w.insertAdjacentHTML("afterbegin",flowHtml()+`<div class="stage-help"><b>🔍 Explore First — Don't Fix Yet!</b><div class="helper">ใช้ตาราง สถิติ และ Visualization ทำความเข้าใจ Dataset ก่อน ระหว่างขั้นนี้ยังไม่อนุญาตให้ Clean ข้อมูล</div></div>`)}
+function renderDetect(w){
+  if(!stageUnlocked("detect")){w.innerHTML=flowHtml()+lockHtml("detect");return}
+  const cols=columns();
+  w.innerHTML=flowHtml()+`<div class="card"><div class="card-head"><div><h2>⚠️ Detect — What problem exists?</h2><p class="section-sub">สร้าง Problem Card จากสิ่งที่สังเกตพบ ยังไม่ต้องเสนอวิธีแก้</p></div><span class="badge warn">${state.problemCards.length} cards</span></div><div class="card-body">
+    <div class="evidence-example"><b>ตัวอย่าง Claim ที่ดี:</b> “Income มีค่าที่ผิดปกติสูงกว่ากลุ่มส่วนใหญ่” — ขั้น Evidence จะให้คุณพิสูจน์ด้วย Boxplot / IQR</div>
+    <div class="grid2" style="margin-top:12px"><label>Problem Type<select id="detectType">${v2ProblemTypes.map(x=>`<option>${x}</option>`).join("")}</select></label><label>Column<select id="detectCol">${options(cols)}</select></label></div>
+    <label style="display:block;margin-top:10px">สิ่งที่สังเกต / Claim<textarea id="detectClaim" placeholder="เช่น Income มีค่าที่สูงกว่ากลุ่มส่วนใหญ่มาก"></textarea></label>
+    <button class="btn primary" id="addProblem" style="margin-top:8px">+ Add Problem Card</button>
+    <h3 style="margin-top:18px">Problem List</h3><div id="problemList">${problemCardsHtml("detect")}</div>
+  </div></div>`;
+  document.getElementById("addProblem").onclick=()=>{const claim=document.getElementById("detectClaim").value.trim();if(claim.length<6)return toast("กรุณาระบุสิ่งที่สังเกตให้ชัดเจน");state.problemCards.push({id:state.nextProblemId++,type:document.getElementById("detectType").value,column:document.getElementById("detectCol").value,claim,evidenceSource:"",evidenceText:"",confidence:3,decision:"",reason:"",operationRefs:[]});setFeedback("Problem Detected","บันทึก Claim แล้ว ขั้นต่อไปต้องเพิ่ม Evidence เพื่อพิสูจน์ว่าเหตุใดจึงจัดเป็นปัญหา");renderAll()};
+  bindProblemDelete();
+}
+function problemCardsHtml(mode){
+  if(!state.problemCards.length)return `<div class="note">ยังไม่มี Problem Card</div>`;
+  return state.problemCards.map(p=>`<div class="problem-card ${decisionComplete(p)?"complete":""}"><div class="problem-head"><b>#${p.id} ${esc(p.type)}</b><span class="badge">${esc(p.column)}</span></div><div class="helper" style="margin-top:5px"><b>Claim:</b> ${esc(p.claim)}</div>${evidenceComplete(p)?`<div class="evidence-box"><b>Evidence:</b> ${esc(p.evidenceSource)} — ${esc(p.evidenceText)}</div>`:""}${decisionComplete(p)?`<div class="decision-box"><b>${esc(p.decision)}</b> — ${esc(p.reason)}</div>`:""}${mode==="detect"?`<button class="btn danger" data-del-problem="${p.id}" style="margin-top:7px">Delete</button>`:""}</div>`).join("")
+}
+function bindProblemDelete(){document.querySelectorAll("[data-del-problem]").forEach(b=>b.onclick=()=>{const id=+b.dataset.delProblem;state.problemCards=state.problemCards.filter(p=>p.id!==id);renderAll()})}
+
+function renderEvidence(w){
+  if(!stageUnlocked("evidence")){w.innerHTML=flowHtml()+lockHtml("evidence");return}
+  w.innerHTML=flowHtml()+`<div class="card"><div class="card-head"><div><h2>📌 Evidence — How do you know?</h2><p class="section-sub">ทุก Claim ต้องมีหลักฐานจากข้อมูล ไม่ใช่ความรู้สึก</p></div></div><div class="card-body">
+  <div class="evidence-example"><b>Claim + Evidence + Reasoning</b><br>Income มี Outlier <b>เพราะ Boxplot/IQR พบค่า 9,999,999 สูงกว่า Upper Fence</b></div>
+  <div class="stack" style="margin-top:12px"><label>Problem Card<select id="evProblem">${state.problemCards.map(p=>`<option value="${p.id}">#${p.id} ${esc(p.type)} — ${esc(p.column)}</option>`).join("")}</select></label><label>Evidence Source<select id="evSource">${evidenceSources.map(x=>`<option>${x}</option>`).join("")}</select></label><label>Evidence Detail<textarea id="evText" placeholder="ระบุตัวเลข รูปแบบ หรือสิ่งที่เห็น เช่น Upper Fence = 185,000 แต่พบ 1,250,000"></textarea></label><label>Confidence (1–5)<input id="evConfidence" type="range" min="1" max="5" value="3"></label><button class="btn primary" id="saveEvidence">Save Evidence</button></div>
+  <h3 style="margin-top:18px">Evidence Board</h3>${problemCardsHtml("evidence")}</div></div>`;
+  const fill=()=>{const p=state.problemCards.find(x=>x.id===+document.getElementById("evProblem").value);if(!p)return;document.getElementById("evSource").value=p.evidenceSource||evidenceSources[0];document.getElementById("evText").value=p.evidenceText||"";document.getElementById("evConfidence").value=p.confidence||3};fill();document.getElementById("evProblem").onchange=fill;
+  document.getElementById("saveEvidence").onclick=()=>{const p=state.problemCards.find(x=>x.id===+document.getElementById("evProblem").value),txt=document.getElementById("evText").value.trim();if(txt.length<8)return toast("Evidence ต้องระบุรายละเอียดที่ตรวจสอบได้");p.evidenceSource=document.getElementById("evSource").value;p.evidenceText=txt;p.confidence=+document.getElementById("evConfidence").value;setFeedback("Evidence Added","ดีมาก ตอนนี้ Claim มีหลักฐานรองรับแล้ว จึงค่อยไปตัดสินใจว่าจะ Keep / Remove / Replace / Transform / Investigate");renderAll()};
+}
+function renderDecide(w){
+  if(!stageUnlocked("decide")){w.innerHTML=flowHtml()+lockHtml("decide");return}
+  const eligible=state.problemCards.filter(evidenceComplete);
+  w.innerHTML=flowHtml()+`<div class="card"><div class="card-head"><div><h2>🧠 Decide — What should we do?</h2><p class="section-sub">เลือกวิธีจัดการจาก Evidence และอธิบายเหตุผลเชิงข้อมูล/โดเมน</p></div></div><div class="card-body">
+  <div class="warning-large">Outlier ≠ Error · Missing ≠ Fill Mean เสมอ · Cleaning ที่ดีต้องรักษาความหมายและลด Bias</div>
+  <div class="stack" style="margin-top:12px"><label>Evidence-backed Problem<select id="decProblem">${eligible.map(p=>`<option value="${p.id}">#${p.id} ${esc(p.type)} — ${esc(p.column)}</option>`).join("")}</select></label><div class="radio-grid">${decisionOptions.map(x=>`<label class="radio-pill"><input type="radio" name="decision" value="${x}"> ${x}</label>`).join("")}</div><label>Reason / Trade-off<textarea id="decReason" placeholder="เพราะอะไร? มีความเสี่ยงอะไร? เช่น Keep เพราะอาจเป็นลูกค้ารายได้สูงจริง"></textarea></label><button class="btn primary" id="saveDecision">Save Decision</button></div>
+  <h3 style="margin-top:18px">Decision Board</h3>${problemCardsHtml("decide")}</div></div>`;
+  const fill=()=>{const p=eligible.find(x=>x.id===+document.getElementById("decProblem").value);if(!p)return;document.querySelectorAll('input[name="decision"]').forEach(r=>r.checked=r.value===p.decision);document.getElementById("decReason").value=p.reason||""};fill();document.getElementById("decProblem").onchange=fill;
+  document.getElementById("saveDecision").onclick=()=>{const p=eligible.find(x=>x.id===+document.getElementById("decProblem").value),d=document.querySelector('input[name="decision"]:checked'),reason=document.getElementById("decReason").value.trim();if(!d)return toast("เลือก Decision ก่อน");if(reason.length<8)return toast("กรุณาอธิบายเหตุผล/Trade-off");p.decision=d.value;p.reason=reason;setFeedback("Decision Saved",`${p.type}: ${p.decision}. ขั้น Clean/Transform จะเปิดเมื่อมี Decision ที่ครบอย่างน้อย 3 ปัญหา`);renderAll()};
+}
+
+function cleanToolsHtml(){
+  const cols=columns(),cat=cols.filter(c=>["Gender","Occupation","Payment_History","Default"].includes(c)),num=cols.filter(c=>["Age","Income","Debt","Credit_Score","Loan_Amount","Loan_Term","Employment_Years"].includes(c));
+  return `<div class="clean-sections">
+  <details open><summary>🧹 Missing Values</summary><div class="stack"><select id="missCol">${options(cols)}</select><select id="missAction"><option value="dropRow">Drop Row</option><option value="dropCol">Drop Column</option><option value="mean">Fill Mean</option><option value="median">Fill Median</option><option value="mode">Fill Mode</option><option value="custom">Fill Custom Value</option></select><input id="missCustom" placeholder="Custom value"><button class="btn primary" id="previewMissing">Preview → Apply</button></div></details>
+  <details><summary>🧹 Duplicate Records</summary><div class="stack"><select id="dupAction"><option value="first">Keep First / Remove duplicate</option><option value="last">Keep Last / Remove duplicate</option><option value="both">Delete Both copies</option><option value="ignore">Ignore</option></select><button class="btn" id="previewDup">Detect & Preview</button></div></details>
+  <details><summary>🧹 Invalid Values</summary><div class="stack"><select id="invalidCol">${options(num)}</select><select id="invalidAction"><option value="remove">Remove Row</option><option value="missing">Convert to Missing</option><option value="replace">Replace (median)</option><option value="keep">Keep</option></select><button class="btn" id="previewInvalid">Preview → Apply</button></div></details>
+  <details><summary>🧹 Inconsistent Categories</summary><div class="stack"><select id="catCol">${options(cat)}</select><button class="btn" id="previewStandardize">Standardize Category</button></div></details>
+  <details><summary>🧹 Outlier Treatment</summary><div class="stack"><select id="outCol">${options(num,"Income")}</select><select id="outMethod"><option value="iqr">IQR</option><option value="z">Z-Score (±3σ)</option></select><select id="outAction"><option value="cap">Cap / Winsorize</option><option value="remove">Remove Row</option><option value="median">Replace Median</option><option value="keep">Keep</option></select><button class="btn" id="previewOutlier">Detect & Preview</button></div></details>
+  </div>`
+}
+function transformToolsHtml(){
+  const cols=columns(),cats=cols.filter(c=>c!=="Customer_ID"),nums=cols.filter(c=>valuesFor(c).length>state.data.length*.5);
+  return `<div class="clean-sections">
+  <details><summary>🔧 Data Type Conversion</summary><div class="stack"><select id="typeCol">${options(cols)}</select><select id="typeAction"><option value="number">Convert to Number</option><option value="string">Convert to String</option></select><button class="btn" id="doType">Preview → Apply</button></div></details>
+  <details><summary>🔧 Categorical Encoding</summary><div class="stack"><select id="encCol">${options(cats,"Gender")}</select><select id="encAction"><option value="label">Label Encoding</option><option value="onehot">One-Hot Encoding</option></select><button class="btn" id="doEncode">Preview → Apply</button></div></details>
+  <details><summary>🔧 Scaling</summary><div class="stack"><select id="scaleCol">${options(nums,"Income")}</select><select id="scaleAction"><option value="norm">Normalization (0–1)</option><option value="std">Standardization (z-score)</option></select><button class="btn" id="doScale">Preview → Apply</button></div></details>
+  <details><summary>🔧 Binning / Feature Engineering</summary><div class="stack"><select id="binCol">${options(nums,"Age")}</select><button class="btn" id="doBin">Create _Band Column</button><div class="grid2"><select id="featA">${options(nums,"Debt")}</select><select id="featB">${options(nums,"Income")}</select></div><input id="featName" value="Debt_to_Income"><button class="btn" id="doFeature">Create A / B</button></div></details>
+  </div>`
+}
+function renderCleanTransform(w){
+  if(!stageUnlocked("cleantransform")){w.innerHTML=flowHtml()+lockHtml("cleantransform");return}
+  const m=metrics();w.innerHTML=flowHtml()+`<div class="card"><div class="card-head"><div><h2>🧹 Clean / Transform — Apply your decision</h2><p class="section-sub">ทุก Operation ต้องระบุเหตุผลก่อน Apply และควรเชื่อมกลับไปยัง Problem Card</p></div></div><div class="card-body"><div class="compare"><div class="note"><b>Current issues</b><br>Missing ${m.missing} · Duplicate ${m.dup} · Invalid ${m.invalid} · Inconsistent ${m.incons} · Potential Outlier ${m.out}</div><div class="note"><b>Rule</b><br>Preview Before/After → Explain Why → Apply → Inspect Pipeline</div></div><div style="margin-top:12px">${dataTableHtml()}</div></div></div>`;bindTableEvents();
+}
+function renderValidateV2(w){
+  if(!stageUnlocked("validate")){w.innerHTML=flowHtml()+lockHtml("validate");return}
+  const a=initialMetrics,b=metrics(),deltaRows=100*(b.rows-a.rows)/a.rows;const warn=Math.abs(Math.min(0,deltaRows))>15;
+  const rows=[
+    ["Rows",a.rows,b.rows,b.rows-a.rows,"ข้อมูลหายมากเกินไปหรือไม่?"],["Columns",a.cols,b.cols,b.cols-a.cols,"Feature เพิ่ม/ลดเพราะอะไร?"],["Missing",a.missing,b.missing,b.missing-a.missing,"ลดลงโดยไม่บิดความหมายหรือไม่?"],["Duplicate",a.dup,b.dup,b.dup-a.dup,"ตรวจว่าเป็น duplicate จริงหรือไม่"],["Invalid",a.invalid,b.invalid,b.invalid-a.invalid,"กฎ Invalid เหมาะกับ domain หรือไม่"],["Potential Outliers",a.out,b.out,b.out-a.out,"Outlier ที่เหลืออาจเป็น valid rare case"],["Completeness",a.completeness.toFixed(1)+"%",b.completeness.toFixed(1)+"%",(b.completeness-a.completeness).toFixed(1)+" pts","ดูคู่กับ Preservation"],["Preservation",a.preservation.toFixed(1)+"%",b.preservation.toFixed(1)+"%",(b.preservation-a.preservation).toFixed(1)+" pts","ข้อมูลถูกลบมากไปหรือไม่"],["Quality",a.quality.toFixed(1)+"%",b.quality.toFixed(1)+"%",(b.quality-a.quality).toFixed(1)+" pts","คะแนนสูงขึ้นจริง หรือ gaming metric?"]
+  ];
+  w.innerHTML=flowHtml()+`<div class="card"><div class="card-head"><div><h2>✅ Validate — Did the data really improve?</h2><p class="section-sub">เปรียบเทียบ Before / After พร้อมพิจารณา Data Preservation</p></div><button class="btn primary" id="runValidation">Run Validation</button></div><div class="card-body">${warn?`<div class="warning-large">⚠️ คุณลบข้อมูลไป ${Math.abs(deltaRows).toFixed(1)}% ของ Dataset เดิม — คุณภาพสูงขึ้น แต่สูญเสียข้อมูลมากเกินไปหรือไม่?</div>`:""}<div class="validate-grid" style="margin-top:12px"><table><thead><tr><th>Metric</th><th>Before</th><th>After</th><th>Change</th><th>Interpretation Prompt</th></tr></thead><tbody>${rows.map(r=>`<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td><td>${r[4]}</td></tr>`).join("")}</tbody></table></div><label style="display:block;margin-top:12px">Validation Note<textarea id="validationNote" placeholder="ข้อมูลดีขึ้นจริง หรือเพียงลบข้อมูลมากขึ้น? มี trade-off อะไร?">${esc(state.validationNote)}</textarea></label></div></div>`;
+  document.getElementById("runValidation").onclick=()=>{state.validationRuns++;state.validationNote=document.getElementById("validationNote").value;state.pipeline.push({label:"Run Before/After Validation",type:"validate",time:new Date().toLocaleTimeString("th-TH")});setFeedback("Validation Complete",`Quality ${b.quality.toFixed(1)}% · Preservation ${b.preservation.toFixed(1)}%. อย่าดูคะแนนอย่างเดียว ให้ตรวจสิ่งที่สูญเสียด้วย`);renderAll();toast("Validation recorded")};
+  document.getElementById("validationNote").oninput=e=>state.validationNote=e.target.value;
+}
+function renderReflect(w){
+  if(!stageUnlocked("reflect")){w.innerHTML=flowHtml()+lockHtml("reflect");return}
+  const sc=score(),m=metrics(),qs=["1. ปัญหาใดรุนแรงที่สุดใน Dataset? ระบุ Evidence","2. การตัดสินใจใดเปลี่ยน Dataset มากที่สุด? เพราะอะไร?","3. มีข้อมูลใดที่คุณเลือก KEEP ทั้งที่ผิดปกติ? เพราะอะไร?","4. หากนำ Dataset ไปสร้าง ML Model ปัญหาใดอาจทำให้ Bias หรือ Prediction ผิดพลาด?"];
+  w.innerHTML=flowHtml()+`<div class="card"><div class="card-head"><div><h2>💭 Reflect — Explain your reasoning</h2><p class="section-sub">Score ${sc.total}/100 · Quality ${m.quality.toFixed(1)}% · Preservation ${m.preservation.toFixed(1)}%</p></div></div><div class="card-body"><div class="score-grid">${[["Exploration",sc.exploration,15],["Detection",sc.detection,15],["Evidence",sc.evidence,15],["Decision",sc.decision,20],["Clean/Transform",sc.practice,15],["Validation",sc.validation,10],["Preservation",sc.preservation,5],["Reflection",sc.reflection,5]].map(x=>`<div class="score-card"><span class="helper">${x[0]}</span><br><b>${x[1].toFixed(1)}</b> / ${x[2]}<div class="progress"><i style="width:${100*x[1]/x[2]}%"></i></div></div>`).join("")}</div><h3 style="margin-top:18px">Reflection</h3><div class="stack">${qs.map((q,i)=>`<label>${q}<textarea data-reflect="${i}" placeholder="อ้างอิงสิ่งที่คุณสำรวจและทดลอง...">${esc(state.reflections[i]||"")}</textarea></label>`).join("")}</div></div></div>`;
+  document.querySelectorAll("[data-reflect]").forEach(t=>t.addEventListener("input",e=>{state.reflections[+e.target.dataset.reflect]=e.target.value;renderTop();renderMissions()}));
+}
+
+renderWorkspace=function(){const w=document.getElementById("workspaceContent");if(state.tab==="explore")renderExploreV2(w);if(state.tab==="detect")renderDetect(w);if(state.tab==="evidence")renderEvidence(w);if(state.tab==="decide")renderDecide(w);if(state.tab==="cleantransform")renderCleanTransform(w);if(state.tab==="validate")renderValidateV2(w);if(state.tab==="reflect")renderReflect(w);document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.go;renderAll()})};
+
+renderTools=function(){
+  const p=document.getElementById("toolPanel"),cols=columns();
+  if(state.tab==="explore"){
+    p.innerHTML=`<div class="tool-group"><h4>🔍 Dataset Inspection</h4><div class="grid2">${["preview","head","tail","info","describe","missing","duplicates","correlation"].map(v=>`<button class="btn ${state.view===v?"soft":""}" data-view="${v}">${v==="preview"?"Preview":v==="head"?"head()":v==="tail"?"tail()":v==="info"?"info()":v==="describe"?"describe()":v==="missing"?"Missing":v==="duplicates"?"Duplicates":"Correlation"}</button>`).join("")}</div></div><div class="tool-group"><h4>📊 Column Explorer</h4><div class="stack"><select id="columnSelect">${options(cols)}</select><div class="grid2"><button class="btn" data-chart="hist">Histogram</button><button class="btn" data-chart="box">Box Plot</button></div><button class="btn" data-chart="bar">Bar Chart / Frequency</button></div></div><div class="note">เป้าหมาย: ใช้อย่างน้อย 5 มุมมองก่อนเข้าสู่ Detect (${state.explored.size}/5)</div>`;
+  }else if(state.tab==="detect")p.innerHTML=`<div class="note"><b>Detect</b><br>บันทึกสิ่งที่สังเกตเป็น Claim ก่อน ยังไม่แก้ข้อมูล</div><div class="tool-group"><h4>Progress</h4><div class="decision-progress"><div class="mini-metric"><b>${state.problemCards.length}</b>Problems</div><div class="mini-metric"><b>${state.problemCards.filter(evidenceComplete).length}</b>Evidence</div><div class="mini-metric"><b>${state.problemCards.filter(decisionComplete).length}</b>Decided</div><div class="mini-metric"><b>${state.cleanOps+state.transformOps}</b>Applied</div></div></div>`;
+  else if(state.tab==="evidence")p.innerHTML=`<div class="note"><b>Evidence Standard</b><br>ต้องระบุแหล่งหลักฐาน + ค่าหรือรูปแบบที่ตรวจสอบได้ เช่น “Income 9,999,999 > Upper Fence”</div>`;
+  else if(state.tab==="decide")p.innerHTML=`<div class="note"><b>Decision Choices</b><br>KEEP · REMOVE · REPLACE · TRANSFORM · INVESTIGATE<br><br>ไม่มีคำตอบเดียว ต้องอธิบาย trade-off</div>`;
+  else if(state.tab==="cleantransform")p.innerHTML=`<div class="tool-group"><h4>🧹 Cleaning Tools</h4>${cleanToolsHtml()}</div><div class="tool-group"><h4>🔧 Transformation Tools</h4>${transformToolsHtml()}</div>`;
+  else if(state.tab==="validate")p.innerHTML=`<div class="note"><b>Validation</b><br>เปรียบเทียบ Before/After และตรวจ Data Preservation ก่อนสรุปว่า “ดีขึ้น”</div>`;
+  else p.innerHTML=`<div class="tool-group"><h4>Export</h4><div class="stack"><button class="btn good" id="exportCsv">⬇ Export Prepared CSV</button><button class="btn" id="exportSummary">⬇ Export Learning Summary</button></div></div><div class="note">Learning Summary v2 บันทึก Problem → Evidence → Decision → Pipeline → Reflection</div>`;
+  bindToolEvents();
+};
+
+// Require a rationale and optionally link every applied operation to a decided problem card.
+operationPreview=function(title,desc,fn,type="clean",feedback=""){
+  if(!decidedEnough()){toast("ยังไม่ผ่าน Decide: ต้องมีอย่างน้อย 3 Problem Cards ที่มี Evidence + Decision + Reason");return}
+  const before=snapshot(),candidate=deepData(state.data);let result;try{result=fn(candidate)}catch(e){toast("Operation error: "+e.message);return}
+  const afterData=result&&result.data?result.data:candidate,bm=metrics(state.data),am=metrics(afterData),decided=state.problemCards.filter(decisionComplete);
+  document.getElementById("modalRoot").innerHTML=`<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><b>${esc(title)}</b><div class="helper">${esc(desc)}</div></div><button class="btn" id="closeModal">✕</button></div><div class="modal-body"><div class="preview-grid"><div><h4>Before</h4><div class="codebox">${esc(previewRows(state.data))}</div></div><div><h4>After Preview</h4><div class="codebox">${esc(previewRows(afterData))}</div></div></div><h4>Impact Preview</h4><div class="stats-grid">${statBox("Rows",`${bm.rows} → ${am.rows}`)}${statBox("Columns",`${bm.cols} → ${am.cols}`)}${statBox("Missing",`${bm.missing} → ${am.missing}`)}${statBox("Quality",`${bm.quality.toFixed(1)} → ${am.quality.toFixed(1)}%`)}</div>${result&&result.note?`<div class="note" style="margin-top:12px">${esc(result.note)}</div>`:""}<div class="reason-required"><b>🧠 Explain before Apply</b><div class="grid2" style="margin-top:8px"><label>Link to Problem Card<select id="opProblem"><option value="">General / not specific</option>${decided.map(p=>`<option value="${p.id}">#${p.id} ${esc(p.type)} — ${esc(p.column)}</option>`).join("")}</select></label><label>Reason<textarea id="opReason" placeholder="เหตุใดจึงเลือกวิธีนี้? มี trade-off อะไร?"></textarea></label></div></div></div><div class="modal-foot"><button class="btn" id="cancelModal">Cancel</button><button class="btn primary" id="applyModal">Apply Operation</button></div></div></div>`;
+  const close=()=>document.getElementById("modalRoot").innerHTML="";document.getElementById("closeModal").onclick=close;document.getElementById("cancelModal").onclick=close;
+  document.getElementById("applyModal").onclick=()=>{const reason=document.getElementById("opReason").value.trim();if(reason.length<8)return toast("กรุณาอธิบายเหตุผลก่อน Apply");const pid=+document.getElementById("opProblem").value||null;state.undo.push(before);if(state.undo.length>25)state.undo.shift();state.redo=[];state.data=afterData;state.pipeline.push({label:desc,type,time:new Date().toLocaleTimeString("th-TH"),reason,problemId:pid});state.totalOps++;if(type==="transform")state.transformOps++;else state.cleanOps++;if(pid){const p=state.problemCards.find(x=>x.id===pid);if(p)p.operationRefs.push(desc)}close();setFeedback(title,feedback||`Applied: ${desc}. ตรวจ Before/After และ Data Preservation ก่อนทำขั้นตอนถัดไป`);state.page=1;renderAll();toast("Applied with rationale")};
+};
+
+// Keep existing tool binding but support v2 export tab and lock state.
+const baseBindToolEvents=bindToolEvents;
+bindToolEvents=function(){baseBindToolEvents();const ec=document.getElementById("exportCsv");if(ec)ec.onclick=exportCsv;const es=document.getElementById("exportSummary");if(es)es.onclick=exportSummary};
+
+exportSummary=function(){const obj={version:"v3-progress-teacher",flow:["Explore","Detect","Evidence","Decide","Clean/Transform","Validate","Reflect"],score:score(),metrics:metrics(),explored:[...state.explored],problemCards:state.problemCards,pipeline:state.pipeline,validation:{runs:state.validationRuns,note:state.validationNote},reflection:state.reflections};downloadBlob(JSON.stringify(obj,null,2),"data_preparation_learning_summary_v3.json","application/json")};
+
+// v2 reset includes learning evidence and decisions.
+document.getElementById("resetBtn").onclick=()=>{if(!confirm("Reset dataset, Problem Cards, Evidence, Decisions และคะแนนทั้งหมดหรือไม่?"))return;state.data=deepData(originalData);state.pipeline=[{label:"Load Dataset",type:"system",time:new Date().toLocaleTimeString("th-TH")}];state.undo=[];state.redo=[];state.detected=new Set();state.explored=new Set();state.problemCards=[];state.cleanOps=0;state.transformOps=0;state.totalOps=0;state.validationRuns=0;state.validationNote="";state.reflections=["","","",""];state.nextProblemId=1;state.page=1;state.tab="explore";state.view="preview";state.selectedColumn="Income";setFeedback("Reset Complete","เริ่มใหม่จาก Explore โดยยังไม่แก้ข้อมูล");renderAll()};
+/* ==================== end v2 evidence-based learning flow ==================== */
+
+
+
+/* ================= v3 learner progress + teacher dashboard ================= */
+const PROGRESS_STORAGE_KEY="dpsl_v3_progress";
+const PROFILE_STORAGE_KEY="dpsl_v3_profile";
+const API_STORAGE_KEY="dpsl_v3_api_url";
+state.student={studentId:"",name:"",email:"",section:"",sessionId:"",startedAt:"",lastSavedAt:""};
+state.remoteSync={status:"local",message:"Local only"};
+let saveTimer=null, remoteTimer=null, suppressAutoSave=false;
+
+function uid(){return "S-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)}
+const DEFAULT_API_URL="https://script.google.com/macros/s/AKfycbzktzTK22RPVI8WVrk0lFYaluRSl9r1SDsRrGvlO5Umm10JslEBaUoS8W_G21wGIYk/exec";
+function getApiUrl(){return (localStorage.getItem(API_STORAGE_KEY)||DEFAULT_API_URL||"").trim()}
+function setApiUrl(v){v=(v||"").trim();if(v)localStorage.setItem(API_STORAGE_KEY,v);else localStorage.removeItem(API_STORAGE_KEY);updateSyncBadge()}
+function learnerKey(){return [state.student.studentId.trim(),state.student.email.trim().toLowerCase()].filter(Boolean).join("|")}
+function stageProgress(){
+  const parts=[Math.min(1,state.explored.size/5),Math.min(1,state.problemCards.length/3),Math.min(1,state.problemCards.filter(evidenceComplete).length/3),Math.min(1,state.problemCards.filter(decisionComplete).length/3),Math.min(1,(state.cleanOps+state.transformOps)/3),Math.min(1,state.validationRuns),Math.min(1,reflectionsDone()/4)];
+  return Math.round(parts.reduce((a,b)=>a+b,0)/parts.length*100);
+}
+function currentStageName(){
+  if(state.validationRuns>=1 && reflectionsDone()>=4)return "Completed";
+  if(stageUnlocked("reflect"))return "Reflect";
+  if(stageUnlocked("validate"))return "Validate";
+  if(stageUnlocked("cleantransform"))return "Clean/Transform";
+  if(stageUnlocked("decide"))return "Decide";
+  if(stageUnlocked("evidence"))return "Evidence";
+  if(stageUnlocked("detect"))return "Detect";
+  return "Explore";
+}
+function serializableLocalState(){return {
+  version:"v3-progress-teacher",savedAt:new Date().toISOString(),student:state.student,tab:state.tab,data:state.data,selectedColumn:state.selectedColumn,view:state.view,page:state.page,pipeline:state.pipeline,
+  explored:[...state.explored],detected:[...state.detected],problemCards:state.problemCards,cleanOps:state.cleanOps,transformOps:state.transformOps,totalOps:state.totalOps,validationRuns:state.validationRuns,validationNote:state.validationNote,reflections:state.reflections,nextProblemId:state.nextProblemId
+}}
+function restoreLocalState(o){
+  if(!o||!o.student)return false;
+  suppressAutoSave=true;
+  try{
+    state.student={...state.student,...o.student};state.tab=o.tab||"explore";state.data=o.data||deepData(originalData);state.selectedColumn=o.selectedColumn||"Income";state.view=o.view||"preview";state.page=o.page||1;state.pipeline=o.pipeline||[];
+    state.explored=new Set(o.explored||[]);state.detected=new Set(o.detected||[]);state.problemCards=o.problemCards||[];state.cleanOps=o.cleanOps||0;state.transformOps=o.transformOps||0;state.totalOps=o.totalOps||0;state.validationRuns=o.validationRuns||0;state.validationNote=o.validationNote||"";state.reflections=o.reflections||["","","",""];state.nextProblemId=o.nextProblemId||1;
+    return true;
+  } finally {suppressAutoSave=false}
+}
+function saveLocalProgress(){
+  if(suppressAutoSave)return;
+  try{state.student.lastSavedAt=new Date().toISOString();localStorage.setItem(PROGRESS_STORAGE_KEY,JSON.stringify(serializableLocalState()));localStorage.setItem(PROFILE_STORAGE_KEY,JSON.stringify(state.student));updateStudentBadge();updateSyncBadge("local");}catch(e){console.warn("local save failed",e)}
+}
+function loadLocalProgress(){
+  try{const p=localStorage.getItem(PROFILE_STORAGE_KEY);if(p)state.student={...state.student,...JSON.parse(p)};const raw=localStorage.getItem(PROGRESS_STORAGE_KEY);if(raw)return restoreLocalState(JSON.parse(raw));}catch(e){console.warn("local restore failed",e)}return false;
+}
+function teacherPayload(){const sc=score(),m=metrics();return {
+  action:"save",version:"v3-progress-teacher",student:{...state.student,key:learnerKey()},score:sc.total,scoreBreakdown:sc,progress:stageProgress(),stage:currentStageName(),metrics:m,
+  counts:{problems:state.problemCards.length,evidence:state.problemCards.filter(evidenceComplete).length,decisions:state.problemCards.filter(decisionComplete).length,cleanOps:state.cleanOps,transformOps:state.transformOps,validationRuns:state.validationRuns},
+  explored:[...state.explored],problemCards:state.problemCards,pipeline:state.pipeline,validation:{runs:state.validationRuns,note:state.validationNote},reflection:state.reflections,updatedAt:new Date().toISOString()
+}}
+async function apiPost(body){const url=getApiUrl();if(!url)throw new Error("ยังไม่ได้ตั้งค่า Google Apps Script Web App URL");const r=await fetch(url,{method:"POST",body:JSON.stringify(body),redirect:"follow"});if(!r.ok)throw new Error("HTTP "+r.status);const text=await r.text();let obj;try{obj=JSON.parse(text)}catch{throw new Error("Backend ตอบกลับไม่ใช่ JSON")};if(obj.ok===false)throw new Error(obj.error||"Backend error");return obj}
+async function remoteSave(silent=true){
+  if(!learnerKey()){if(!silent)openStudentProfile();return false}
+  if(!getApiUrl()){updateSyncBadge("local");if(!silent)toast("บันทึกในเครื่องแล้ว แต่ยังไม่ได้เชื่อม Google Sheet");return false}
+  updateSyncBadge("syncing");
+  try{const res=await apiPost(teacherPayload());state.remoteSync={status:"ok",message:"Saved"};updateSyncBadge("ok");if(!silent)toast("บันทึกคะแนนและความก้าวหน้าแล้ว");return true}catch(e){state.remoteSync={status:"error",message:e.message};updateSyncBadge("error");if(!silent)toast("บันทึกออนไลน์ไม่สำเร็จ: "+e.message);return false}
+}
+function scheduleProgressSave(){if(suppressAutoSave)return;clearTimeout(saveTimer);saveTimer=setTimeout(()=>{saveLocalProgress();clearTimeout(remoteTimer);remoteTimer=setTimeout(()=>remoteSave(true),1200)},700)}
+function updateStudentBadge(){const el=document.getElementById("studentBadge");if(!el)return;el.textContent=state.student.name?`👤 ${state.student.name}${state.student.studentId?" · "+state.student.studentId:""}`:"👤 ยังไม่ระบุผู้เรียน"}
+function updateSyncBadge(mode){const dot=document.querySelector("#syncBadge .sync-dot"),txt=document.getElementById("syncText");if(!dot||!txt)return;dot.classList.remove("ok","err");const api=!!getApiUrl();if(mode==="ok"){dot.classList.add("ok");txt.textContent="Synced"}else if(mode==="error"){dot.classList.add("err");txt.textContent="Sync error"}else if(mode==="syncing"){txt.textContent="Saving..."}else{txt.textContent=api?"Ready":"Local"}}
+function escAttr(x){return esc(x||"")}
+function openStudentProfile(){
+  document.getElementById("modalRoot").innerHTML=`<div class="modal-backdrop"><div class="modal"><div class="modal-head"><div><b>👤 ข้อมูลผู้เรียน</b><div class="helper">ใช้สำหรับบันทึกคะแนนและติดตามความก้าวหน้า</div></div><button class="btn" id="closeProfile">✕</button></div><div class="modal-body"><div class="profile-grid"><label>รหัสนักศึกษา<input id="pfId" value="${escAttr(state.student.studentId)}" placeholder="เช่น 6601234567"></label><label>ชื่อ-นามสกุล<input id="pfName" value="${escAttr(state.student.name)}" placeholder="ชื่อผู้เรียน"></label><label>Email<input id="pfEmail" type="email" value="${escAttr(state.student.email)}" placeholder="student@email.kmutnb.ac.th"></label><label>กลุ่ม/ห้อง<input id="pfSection" value="${escAttr(state.student.section)}" placeholder="เช่น CED-1"></label><div class="full note">ข้อมูลนี้จะบันทึกใน Browser และส่งไป Google Sheet เมื่อครูตั้งค่า Backend แล้ว</div></div></div><div class="modal-foot"><button class="btn" id="cancelProfile">ยกเลิก</button><button class="btn primary" id="saveProfile">บันทึกข้อมูลผู้เรียน</button></div></div></div>`;
+  const close=()=>document.getElementById("modalRoot").innerHTML="";document.getElementById("closeProfile").onclick=close;document.getElementById("cancelProfile").onclick=close;
+  document.getElementById("saveProfile").onclick=()=>{const id=document.getElementById("pfId").value.trim(),name=document.getElementById("pfName").value.trim(),email=document.getElementById("pfEmail").value.trim(),section=document.getElementById("pfSection").value.trim();if(!id||!name)return toast("กรุณาระบุรหัสนักศึกษาและชื่อ");state.student={...state.student,studentId:id,name,email,section,sessionId:state.student.sessionId||uid(),startedAt:state.student.startedAt||new Date().toISOString()};saveLocalProgress();close();renderAll();remoteSave(true)};
+}
+function teacherTableRows(rows){return rows.map((r,i)=>`<tr class="teacher-row" data-teacher-index="${i}"><td><b>${esc(r.studentId||"")}</b><div class="tiny">${esc(r.name||"")}</div></td><td>${esc(r.section||"")}</td><td><b>${r.score??0}</b></td><td>${r.progress??0}%</td><td>${esc(r.stage||"")}</td><td class="tiny">${esc(r.updatedAt||"")}</td></tr>`).join("")}
+function answerDetailHtml(r){if(!r)return `<div class="note">เลือกผู้เรียนเพื่อดูคำตอบ</div>`;const pcs=r.problemCards||[],refs=r.reflection||[];return `<div class="answer-card"><h4>${esc(r.name||"")} · ${esc(r.studentId||"")}</h4><div>Score <b>${r.score??0}/100</b> · Progress <b>${r.progress??0}%</b> · Stage <b>${esc(r.stage||"")}</b></div><div class="tiny">${esc(r.email||"")} ${r.section?" · "+esc(r.section):""}</div></div><h3>Problem → Evidence → Decision</h3>${pcs.length?pcs.map(p=>`<div class="answer-card"><h4>#${p.id} ${esc(p.type)} · ${esc(p.column)}</h4><div><b>Claim:</b> ${esc(p.claim||"")}</div><div><b>Evidence:</b> ${esc(p.evidenceSource||"")} — ${esc(p.evidenceText||"")}</div><div><b>Decision:</b> ${esc(p.decision||"-")}</div><div><b>Reason:</b> ${esc(p.reason||"-")}</div></div>`).join(""):`<div class="note">ยังไม่มี Problem Card</div>`}<h3>Reflection</h3>${refs.map((x,i)=>`<div class="answer-card"><b>ข้อ ${i+1}</b><div>${esc(x||"—")}</div></div>`).join("")}<h3>Validation</h3><div class="answer-card">${esc(r.validationNote||"—")}</div>`}
+function openTeacherDashboard(){
+  const api=getApiUrl();
+  document.getElementById("modalRoot").innerHTML=`<div class="modal-backdrop"><div class="modal" style="max-width:1200px"><div class="modal-head"><div><b>👩‍🏫 Teacher Progress Dashboard</b><div class="helper">ติดตามคะแนน ความก้าวหน้า Evidence/Decision และ Reflection ของผู้เรียน • Backend เชื่อมต่อแล้ว</div></div><button class="btn" id="closeTeacher">✕</button></div><div class="modal-body"><div class="connection-box"><div class="grid2"><label>Google Apps Script Web App URL<input id="teacherApi" value="${escAttr(api)}" placeholder="https://script.google.com/macros/s/.../exec"></label><label>Teacher PIN<input id="teacherPin" type="password" placeholder="PIN ที่ตั้งใน Script Properties"></label></div><div class="small-actions" style="margin-top:8px"><button class="btn" id="saveApi">Save URL</button><button class="btn primary" id="loadTeacher">Load Students</button></div></div><div class="teacher-grid"><div><h3>ผู้เรียน</h3><div class="teacher-list"><table><thead><tr><th>Student</th><th>Section</th><th>Score</th><th>Progress</th><th>Stage</th><th>Updated</th></tr></thead><tbody id="teacherRows"><tr><td colspan="6">กด Load Students</td></tr></tbody></table></div></div><div><h3>คำตอบและหลักฐาน</h3><div class="teacher-detail" id="teacherDetail"><div class="note">เลือกผู้เรียนเพื่อดูรายละเอียด</div></div></div></div></div></div></div>`;
+  const close=()=>document.getElementById("modalRoot").innerHTML="";
+  document.getElementById("closeTeacher").onclick=close;
+  document.getElementById("saveApi").onclick=()=>{setApiUrl(document.getElementById("teacherApi").value);toast("บันทึก Backend URL แล้ว")};
+  document.getElementById("loadTeacher").onclick=async()=>{
+    const pin=document.getElementById("teacherPin").value.trim();
+    if(!pin)return toast("กรุณาใส่ Teacher PIN");
+    setApiUrl(document.getElementById("teacherApi").value);
+    const tbody=document.getElementById("teacherRows");
+    tbody.innerHTML=`<tr><td colspan="6">Loading...</td></tr>`;
+    try{
+      const res=await apiPost({action:"teacherList",pin});
+      const rows=res.rows||[];
+      tbody.innerHTML=rows.length?teacherTableRows(rows):`<tr><td colspan="6">ยังไม่มีข้อมูลผู้เรียน</td></tr>`;
+      tbody.querySelectorAll("[data-teacher-index]").forEach(tr=>{
+        tr.onclick=async()=>{
+          const r=rows[+tr.dataset.teacherIndex];
+          document.getElementById("teacherDetail").innerHTML=`<div class="note">Loading ${esc(r.name||r.studentId||"")}...</div>`;
+          try{
+            const d=await apiPost({action:"teacherDetail",pin,key:r.key});
+            document.getElementById("teacherDetail").innerHTML=answerDetailHtml(d.record);
+          }catch(e){
+            document.getElementById("teacherDetail").innerHTML=`<div class="warning-large">${esc(e.message)}</div>`;
+          }
+        };
+      });
+    }catch(e){
+      tbody.innerHTML=`<tr><td colspan="6">${esc(e.message)}</td></tr>`;
+    }
+  };
+}
+
+// Wrap renderAll so meaningful changes are autosaved without changing the learning flow.
+const renderAllV2=renderAll;
+renderAll=function(){renderAllV2();updateStudentBadge();updateSyncBadge();scheduleProgressSave()};
+
+// Top-bar actions.
+document.getElementById("studentProfileBtn").onclick=openStudentProfile;
+document.getElementById("saveProgressBtn").onclick=()=>{saveLocalProgress();remoteSave(false)};
+document.getElementById("teacherDashboardBtn").onclick=openTeacherDashboard;
+
+// Restore the learner's local session before the first render.
+loadLocalProgress();
+if(!state.student.sessionId)state.student.sessionId=uid();
+if(!state.student.startedAt)state.student.startedAt=new Date().toISOString();
+/* ================= end v3 learner progress + teacher dashboard ============== */
+
+
+/* --------------------------------- init ----------------------------------- */
+renderAll();
+</script>
+</body>
+</html>
