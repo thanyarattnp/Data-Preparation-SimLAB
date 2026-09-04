@@ -1289,7 +1289,8 @@ function teacherPayload(){const sc=score(),m=metrics();return {
   counts:{problems:state.problemCards.length,evidence:state.problemCards.filter(evidenceComplete).length,decisions:state.problemCards.filter(decisionComplete).length,cleanOps:state.cleanOps,transformOps:state.transformOps,validationRuns:state.validationRuns},
   explored:[...state.explored],problemCards:state.problemCards,pipeline:state.pipeline,validation:{runs:state.validationRuns,note:state.validationNote},reflection:state.reflections,updatedAt:new Date().toISOString()
 }}
-async function apiPost(body){const url=getApiUrl();if(!url)throw new Error("ยังไม่ได้ตั้งค่า Google Apps Script Web App URL");const r=await fetch(url,{method:"POST",body:JSON.stringify(body),redirect:"follow"});if(!r.ok)throw new Error("HTTP "+r.status);const text=await r.text();let obj;try{obj=JSON.parse(text)}catch{throw new Error("Backend ตอบกลับไม่ใช่ JSON")};if(obj.ok===false)throw new Error(obj.error||"Backend error");return obj}
+async function apiPost(body){const url=getApiUrl();if(!url)throw new Error("ยังไม่ได้ตั้งค่า Google Apps Script Web App URL");await fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)});return {ok:true,opaque:true}}
+function apiJsonp(params){return new Promise((resolve,reject)=>{const url=getApiUrl();if(!url){reject(new Error("ยังไม่ได้ตั้งค่า Google Apps Script Web App URL"));return;}const cb="dpJsonp_"+Date.now()+"_"+Math.random().toString(36).slice(2);const q=new URLSearchParams({...params,callback:cb});const script=document.createElement("script");const timer=setTimeout(()=>{cleanup();reject(new Error("Backend timeout"))},15000);function cleanup(){clearTimeout(timer);delete window[cb];script.remove()}window[cb]=(obj)=>{cleanup();if(obj&&obj.ok===false)reject(new Error(obj.error||"Backend error"));else resolve(obj)};script.onerror=()=>{cleanup();reject(new Error("ไม่สามารถโหลดข้อมูลจาก Backend"))};script.src=url+"?"+q.toString();document.body.appendChild(script)})}
 async function remoteSave(silent=true){
   if(!learnerKey()){if(!silent)openStudentProfile();return false}
   if(!getApiUrl()){updateSyncBadge("local");if(!silent)toast("บันทึกในเครื่องแล้ว แต่ยังไม่ได้เชื่อม Google Sheet");return false}
@@ -1320,7 +1321,7 @@ function openTeacherDashboard(){
     const tbody=document.getElementById("teacherRows");
     tbody.innerHTML=`<tr><td colspan="6">Loading...</td></tr>`;
     try{
-      const res=await apiPost({action:"teacherList",pin});
+      const res=await apiJsonp({action:"teacherList",pin});
       const rows=res.rows||[];
       tbody.innerHTML=rows.length?teacherTableRows(rows):`<tr><td colspan="6">ยังไม่มีข้อมูลผู้เรียน</td></tr>`;
       tbody.querySelectorAll("[data-teacher-index]").forEach(tr=>{
@@ -1328,7 +1329,7 @@ function openTeacherDashboard(){
           const r=rows[+tr.dataset.teacherIndex];
           document.getElementById("teacherDetail").innerHTML=`<div class="note">Loading ${esc(r.name||r.studentId||"")}...</div>`;
           try{
-            const d=await apiPost({action:"teacherDetail",pin,key:r.key});
+            const d=await apiJsonp({action:"teacherDetail",pin,key:r.key});
             document.getElementById("teacherDetail").innerHTML=answerDetailHtml(d.record);
           }catch(e){
             document.getElementById("teacherDetail").innerHTML=`<div class="warning-large">${esc(e.message)}</div>`;
